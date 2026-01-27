@@ -667,14 +667,14 @@ components:
     PaymentPayloadResponse:
       additionalProperties: false
       properties:
-        action:
-          description: Action URL (verification, 3DS, etc.)
-          type: string
         amount:
           description: Payment amount
           example: 12.34
           format: decimal
           type: number
+        authCode:
+          description: Authorization code from acquirer
+          type: string
         card:
           $ref: "#/components/schemas/CardPayloadResponse"
           description: Card details
@@ -724,6 +724,28 @@ components:
             - REFUND_REJECTED
             - REFUND_FAILED
             - REFUND_COMPLETED
+          type: string
+        threeDsCompletedAt:
+          description: When 3DS authentication was completed
+          format: date-time
+          type: string
+        threeDsOpenedAt:
+          description: When 3DS authentication was initiated
+          format: date-time
+          type: string
+        threeDsRedirectUrl:
+          description: URL for 3DS challenge redirect
+          type: string
+        threeDsRequired:
+          description: Whether 3DS authentication is required
+          type: boolean
+        threeDsResult:
+          description: 3DS authentication result
+          example: APPROVED
+          type: string
+        threeDsStatus:
+          description: 3DS authentication status
+          example: REDIRECT
           type: string
         type:
           description: Transaction type
