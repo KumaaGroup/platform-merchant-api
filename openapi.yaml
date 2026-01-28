@@ -753,6 +753,7 @@ components:
             - CHECKOUT
             - REFUND
             - DISPUTE
+            - PUSH-TO-CARD
           type: string
         updatedAt:
           description: Last update timestamp
@@ -770,6 +771,79 @@ components:
         - status
         - createdAt
         - updatedAt
+      type: object
+    PaymentPtcCreateData:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          minimum: 0.01
+          type: number
+        card:
+          $ref: "#/components/schemas/PaymentCard"
+          description: Card details
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        externalId:
+          description: External reference ID
+          maxLength: 255
+          minLength: 1
+          pattern: ^[a-zA-Z0-9_-]+$
+          type: string
+        metadata:
+          description: Metadata
+          type: string
+      required:
+        - card
+        - currency
+        - amount
+        - externalId
+      type: object
+    PaymentPtcCreatedResponse:
+      additionalProperties: false
+      properties:
+        externalId:
+          description: External ID provided by merchant
+          type: string
+        id:
+          description: Push-to-card payment ID
+          example: ptc_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        message:
+          description: Decline reason if applicable
+          type: string
+        status:
+          description: Payment status
+          enum:
+            - EMAIL_VERIFICATION
+            - AUTH_REQUESTED
+            - AUTHORIZED
+            - KYC_REQUESTED
+            - CAPTURED
+            - DECLINED
+            - FAILED
+            - TRANSFERRED
+            - REFUNDED
+            - PARTIALLY_REFUNDED
+            - DISPUTE_WON
+            - CHARGEBACK
+            - PAYMENT_REQUESTED
+            - PENDING_APPROVAL
+            - REFUND_APPROVED
+            - REFUND_REJECTED
+            - REFUND_FAILED
+            - REFUND_COMPLETED
+          example: AUTH_REQUESTED
+          type: string
+      required:
+        - id
+        - externalId
+        - status
       type: object
     RefundCreateData:
       additionalProperties: false
@@ -1212,6 +1286,29 @@ paths:
         "409":
           description: Duplicate externalId conflicts with existing payment
       summary: Create payments batch
+      tags:
+        - Payment
+  /api/payment/ptc:
+    post:
+      description: Requests a new push-to-card payment
+      operationId: create-payment-ptc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentPtcCreateData"
+              description: Push-to-card payment creation data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentPtcCreatedResponse"
+          description: OK
+        "422":
+          description: Push-to-card payment declined
+      summary: Create push-to-card payment
       tags:
         - Payment
   /api/payment/{id}:
