@@ -8,7 +8,6 @@ components:
           items:
             $ref: "#/components/schemas/PaymentCreateData"
           minItems: 1
-          nullable: true
           type: array
       required:
         - payments
@@ -110,7 +109,6 @@ components:
             $ref: "#/components/schemas/CardWhitelistCreateItem"
           maxItems: 100
           minItems: 1
-          nullable: true
           type: array
       required:
         - cards
@@ -141,7 +139,6 @@ components:
           description: Created card whitelist entries
           items:
             $ref: "#/components/schemas/CardWhitelistResponse"
-          nullable: true
           type: array
       required:
         - items
@@ -153,7 +150,6 @@ components:
           description: Card whitelist entries
           items:
             $ref: "#/components/schemas/CardWhitelistResponse"
-          nullable: true
           type: array
         nextCursor:
           description: Next cursor
@@ -200,7 +196,6 @@ components:
             $ref: "#/components/schemas/CustomerBlocklistCreateItem"
           maxItems: 100
           minItems: 1
-          nullable: true
           type: array
       required:
         - customers
@@ -232,7 +227,6 @@ components:
           description: Created blocklist entries
           items:
             $ref: "#/components/schemas/CustomerBlocklistResponse"
-          nullable: true
           type: array
       required:
         - items
@@ -244,7 +238,6 @@ components:
           description: Customer blocklist entries
           items:
             $ref: "#/components/schemas/CustomerBlocklistResponse"
-          nullable: true
           type: array
         nextCursor:
           description: Next cursor
@@ -332,7 +325,6 @@ components:
           description: Optional list of individual error details
           items:
             $ref: "#/components/schemas/ErrorDetail"
-          nullable: true
           type: array
         instance:
           description: A URI reference that identifies the specific occurrence of the problem.
@@ -402,7 +394,6 @@ components:
           description: Transaction list
           items:
             $ref: "#/components/schemas/OpenBankingTransactionResponse"
-          nullable: true
           type: array
         nextCursor:
           description: Next cursor
@@ -656,7 +647,6 @@ components:
           description: Payment list
           items:
             $ref: "#/components/schemas/PaymentPayloadResponse"
-          nullable: true
           type: array
         nextCursor:
           description: Next cursor
@@ -888,7 +878,6 @@ components:
           description: Custom headers
           items:
             $ref: "#/components/schemas/WebhookHeader"
-          nullable: true
           type: array
         id:
           description: Webhook ID
@@ -926,7 +915,6 @@ components:
           items:
             $ref: "#/components/schemas/WebhookHeader"
           maxItems: 5
-          nullable: true
           type: array
         url:
           description: Webhook URL (must be HTTPS)
@@ -967,7 +955,6 @@ components:
           items:
             $ref: "#/components/schemas/WebhookHeader"
           maxItems: 5
-          nullable: true
           type: array
         url:
           description: Webhook URL
@@ -983,7 +970,6 @@ components:
           description: List of webhooks
           items:
             $ref: "#/components/schemas/Webhook"
-          nullable: true
           type: array
       type: object
 info:
