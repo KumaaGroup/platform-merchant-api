@@ -1179,6 +1179,7 @@ components:
           description: Customer information
         customerIp:
           description: Customer IP address
+          format: ipv4
           type: string
         externalId:
           description: External reference ID
