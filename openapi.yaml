@@ -308,12 +308,12 @@ paths:
       description: Retrieves an existing payment by ID
       operationId: get-payment
       parameters:
-        - description: payment ID
+        - description: dynamic prefixed UUID
           in: path
           name: id
           required: true
           schema:
-            description: payment ID
+            description: dynamic prefixed UUID
             type: string
       responses:
         "200":
@@ -1232,16 +1232,16 @@ components:
             - DECLINED
             - FAILED
             - TRANSFERRED
-            - REFUNDED
-            - PARTIALLY_REFUNDED
             - DISPUTE_WON
             - CHARGEBACK
             - PAYMENT_REQUESTED
-            - PENDING_APPROVAL
+            - REFUND_PENDING_APPROVAL
             - REFUND_APPROVED
             - REFUND_REJECTED
+            - REFUND_DECLINED
             - REFUND_FAILED
             - REFUND_COMPLETED
+            - INVALID
           example: AUTH_REQUESTED
           type: string
       required:
@@ -1330,7 +1330,7 @@ components:
           description: External ID provided by merchant
           type: string
         id:
-          description: Payment ID
+          description: Payment or refund ID
           example: pay_550e8400-e29b-41d4-a716-446655440000
           type: string
         metadata:
@@ -1350,16 +1350,16 @@ components:
             - DECLINED
             - FAILED
             - TRANSFERRED
-            - REFUNDED
-            - PARTIALLY_REFUNDED
             - DISPUTE_WON
             - CHARGEBACK
             - PAYMENT_REQUESTED
-            - PENDING_APPROVAL
+            - REFUND_PENDING_APPROVAL
             - REFUND_APPROVED
             - REFUND_REJECTED
+            - REFUND_DECLINED
             - REFUND_FAILED
             - REFUND_COMPLETED
+            - INVALID
           type: string
         type:
           description: Transaction type
@@ -1449,16 +1449,16 @@ components:
             - DECLINED
             - FAILED
             - TRANSFERRED
-            - REFUNDED
-            - PARTIALLY_REFUNDED
             - DISPUTE_WON
             - CHARGEBACK
             - PAYMENT_REQUESTED
-            - PENDING_APPROVAL
+            - REFUND_PENDING_APPROVAL
             - REFUND_APPROVED
             - REFUND_REJECTED
+            - REFUND_DECLINED
             - REFUND_FAILED
             - REFUND_COMPLETED
+            - INVALID
           example: AUTH_REQUESTED
           type: string
       required:
