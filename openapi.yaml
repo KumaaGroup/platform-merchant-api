@@ -305,15 +305,17 @@ paths:
         - Payment
   /api/payment/{id}:
     get:
-      description: Retrieves an existing payment by ID
+      description: Retrieves an existing payment or refund by ID
       operationId: get-payment
       parameters:
-        - description: dynamic prefixed UUID
+        - description: Payment or refund ID
+          example: pay_550e8400-e29b-41d4-a716-446655440000
           in: path
           name: id
           required: true
           schema:
-            description: dynamic prefixed UUID
+            description: Payment or refund ID
+            example: pay_550e8400-e29b-41d4-a716-446655440000
             type: string
       responses:
         "200":
@@ -328,7 +330,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
-      summary: Get payment
+      summary: Get payment or refund
       tags:
         - Payment
   /api/payment/{id}/confirm:
