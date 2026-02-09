@@ -1338,6 +1338,9 @@ components:
         metadata:
           description: Associated metadata
           type: string
+        parentPaymentId:
+          description: Parent payment ID (available for REFUND, CHARGEBACK, PUSH-TO-CARD)
+          type: string
         responseCode:
           description: Decline reason code if applicable
           type: string
