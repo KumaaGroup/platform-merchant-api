@@ -1226,23 +1226,19 @@ components:
         status:
           description: Payment status
           enum:
-            - EMAIL_VERIFICATION
             - AUTH_REQUESTED
             - AUTHORIZED
-            - KYC_REQUESTED
             - CAPTURED
             - DECLINED
             - FAILED
             - TRANSFERRED
             - DISPUTE_WON
             - CHARGEBACK
-            - PAYMENT_REQUESTED
-            - REFUND_PENDING_APPROVAL
-            - REFUND_APPROVED
-            - REFUND_REJECTED
-            - REFUND_DECLINED
-            - REFUND_FAILED
-            - REFUND_COMPLETED
+            - REQUESTED
+            - PENDING_APPROVAL
+            - APPROVED
+            - REJECTED
+            - COMPLETED
             - INVALID
           example: AUTH_REQUESTED
           type: string
@@ -1347,23 +1343,19 @@ components:
         status:
           description: Payment status
           enum:
-            - EMAIL_VERIFICATION
             - AUTH_REQUESTED
             - AUTHORIZED
-            - KYC_REQUESTED
             - CAPTURED
             - DECLINED
             - FAILED
             - TRANSFERRED
             - DISPUTE_WON
             - CHARGEBACK
-            - PAYMENT_REQUESTED
-            - REFUND_PENDING_APPROVAL
-            - REFUND_APPROVED
-            - REFUND_REJECTED
-            - REFUND_DECLINED
-            - REFUND_FAILED
-            - REFUND_COMPLETED
+            - REQUESTED
+            - PENDING_APPROVAL
+            - APPROVED
+            - REJECTED
+            - COMPLETED
             - INVALID
           type: string
         type:
@@ -1446,23 +1438,19 @@ components:
         status:
           description: Payment status
           enum:
-            - EMAIL_VERIFICATION
             - AUTH_REQUESTED
             - AUTHORIZED
-            - KYC_REQUESTED
             - CAPTURED
             - DECLINED
             - FAILED
             - TRANSFERRED
             - DISPUTE_WON
             - CHARGEBACK
-            - PAYMENT_REQUESTED
-            - REFUND_PENDING_APPROVAL
-            - REFUND_APPROVED
-            - REFUND_REJECTED
-            - REFUND_DECLINED
-            - REFUND_FAILED
-            - REFUND_COMPLETED
+            - REQUESTED
+            - PENDING_APPROVAL
+            - APPROVED
+            - REJECTED
+            - COMPLETED
             - INVALID
           example: AUTH_REQUESTED
           type: string
