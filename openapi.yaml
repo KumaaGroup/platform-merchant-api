@@ -217,6 +217,15 @@ paths:
             maximum: 100
             minimum: 1
             type: integer
+        - description: Filter by external ID
+          explode: false
+          in: query
+          name: externalId
+          schema:
+            description: Filter by external ID
+            items:
+              type: string
+            type: array
       responses:
         "200":
           content:
@@ -1232,8 +1241,6 @@ components:
             - DECLINED
             - FAILED
             - TRANSFERRED
-            - DISPUTE_WON
-            - CHARGEBACK
             - REQUESTED
             - PENDING_APPROVAL
             - APPROVED
@@ -1349,8 +1356,6 @@ components:
             - DECLINED
             - FAILED
             - TRANSFERRED
-            - DISPUTE_WON
-            - CHARGEBACK
             - REQUESTED
             - PENDING_APPROVAL
             - APPROVED
@@ -1363,7 +1368,7 @@ components:
           enum:
             - CHECKOUT
             - REFUND
-            - DISPUTE
+            - CHARGEBACK
             - PUSH-TO-CARD
           type: string
         updatedAt:
@@ -1444,8 +1449,6 @@ components:
             - DECLINED
             - FAILED
             - TRANSFERRED
-            - DISPUTE_WON
-            - CHARGEBACK
             - REQUESTED
             - PENDING_APPROVAL
             - APPROVED
