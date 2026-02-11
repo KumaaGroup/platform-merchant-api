@@ -1501,11 +1501,29 @@ components:
           description: Associated payment ID
           example: pay_550e8400-e29b-41d4-a716-446655440000
           type: string
+        status:
+          description: Refund status (payment status value)
+          enum:
+            - AUTH_REQUESTED
+            - AUTHORIZED
+            - CAPTURED
+            - DECLINED
+            - FAILED
+            - TRANSFERRED
+            - REQUESTED
+            - PENDING_APPROVAL
+            - APPROVED
+            - REJECTED
+            - COMPLETED
+            - INVALID
+          example: REQUESTED
+          type: string
       required:
         - id
         - paymentId
         - amount
         - createdAt
+        - status
       type: object
     Webhook:
       additionalProperties: false
