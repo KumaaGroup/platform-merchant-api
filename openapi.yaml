@@ -3,7 +3,10 @@ info:
   title: Platform Merchants API
   version: 1.0.0
 servers:
-  - url: http://localhost:8080
+  - description: localhost
+    url: http://localhost:8080
+  - description: test
+    url: https://test-merchants-api.nonprod.paygate.systems
 paths:
   /api/blocklist/customers:
     get:
