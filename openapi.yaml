@@ -756,7 +756,7 @@ components:
           description: BIN code of card
           maxLength: 8
           minLength: 6
-          pattern: ^[0-9]{6,8}$
+          pattern: ^([0-9]{6}|[0-9]{8})$
           type: string
         last4:
           description: Card last 4 digits
