@@ -1242,7 +1242,6 @@ components:
             - AUTHORIZED
             - CAPTURED
             - DECLINED
-            - FAILED
             - TRANSFERRED
             - REQUESTED
             - PENDING_APPROVAL
@@ -1357,7 +1356,6 @@ components:
             - AUTHORIZED
             - CAPTURED
             - DECLINED
-            - FAILED
             - TRANSFERRED
             - REQUESTED
             - PENDING_APPROVAL
@@ -1450,7 +1448,6 @@ components:
             - AUTHORIZED
             - CAPTURED
             - DECLINED
-            - FAILED
             - TRANSFERRED
             - REQUESTED
             - PENDING_APPROVAL
@@ -1511,7 +1508,6 @@ components:
             - AUTHORIZED
             - CAPTURED
             - DECLINED
-            - FAILED
             - TRANSFERRED
             - REQUESTED
             - PENDING_APPROVAL
