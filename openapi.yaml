@@ -1077,6 +1077,10 @@ components:
           description: Currency code (always EUR)
           example: EUR
           type: string
+        finishedAt:
+          description: Terminal status timestamp (when transaction reached COMPLETED, FAILED or CANCELLED)
+          format: date-time
+          type: string
         iban:
           description: IBAN if available
           type: string
@@ -1335,6 +1339,10 @@ components:
           description: Customer information
         externalId:
           description: External ID provided by merchant
+          type: string
+        finishedAt:
+          description: Terminal status timestamp (when payment reached COMPLETED, DECLINED, REJECTED or INVALID)
+          format: date-time
           type: string
         id:
           description: Payment or refund ID
