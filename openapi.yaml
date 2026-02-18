@@ -1242,6 +1242,7 @@ components:
             - DECLINED
             - TRANSFERRED
             - REQUESTED
+            - PENDING
             - PENDING_APPROVAL
             - APPROVED
             - REJECTED
@@ -1360,6 +1361,7 @@ components:
             - DECLINED
             - TRANSFERRED
             - REQUESTED
+            - PENDING
             - PENDING_APPROVAL
             - APPROVED
             - REJECTED
@@ -1452,6 +1454,7 @@ components:
             - DECLINED
             - TRANSFERRED
             - REQUESTED
+            - PENDING
             - PENDING_APPROVAL
             - APPROVED
             - REJECTED
@@ -1512,6 +1515,7 @@ components:
             - DECLINED
             - TRANSFERRED
             - REQUESTED
+            - PENDING
             - PENDING_APPROVAL
             - APPROVED
             - REJECTED
