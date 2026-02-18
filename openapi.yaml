@@ -23,7 +23,6 @@ paths:
             description: Cursor for pagination
             type: string
         - description: Maximum number of items to return
-          example: 20
           explode: false
           in: query
           name: limit
@@ -117,7 +116,6 @@ paths:
             description: Cursor for pagination
             type: string
         - description: Maximum number of items to return
-          example: 20
           explode: false
           in: query
           name: limit
@@ -211,7 +209,6 @@ paths:
             description: Cursor for pagination
             type: string
         - description: Maximum number of items to return
-          example: 20
           explode: false
           in: query
           name: limit
@@ -323,7 +320,6 @@ paths:
       operationId: get-payment
       parameters:
         - description: Payment or refund ID
-          example: pay_550e8400-e29b-41d4-a716-446655440000
           in: path
           name: id
           required: true
@@ -460,7 +456,6 @@ paths:
       operationId: delete-webhook
       parameters:
         - description: Webhook ID
-          example: whk_01234567-0000-0000-0000-000000000000
           in: path
           name: webhookId
           required: true
@@ -485,7 +480,6 @@ paths:
       operationId: get-webhook
       parameters:
         - description: Webhook ID
-          example: whk_01234567-0000-0000-0000-000000000000
           in: path
           name: webhookId
           required: true
@@ -514,7 +508,6 @@ paths:
       operationId: update-webhook
       parameters:
         - description: Webhook ID
-          example: whk_01234567-0000-0000-0000-000000000000
           in: path
           name: webhookId
           required: true
@@ -558,7 +551,6 @@ paths:
             description: Cursor for pagination
             type: string
         - description: Maximum number of items to return
-          example: 20
           explode: false
           in: query
           name: limit
