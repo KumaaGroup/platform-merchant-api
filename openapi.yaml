@@ -10,7 +10,7 @@ servers:
   - description: sandbox
     url: https://sandbox-merchants-api.nonprod.paygate.systems
 paths:
-  /api/blocklist/customers:
+  /blocklist/customers:
     get:
       description: Lists blocked customers with pagination
       operationId: list-customer-blocklist
@@ -75,7 +75,7 @@ paths:
       summary: Create customer blocklist entries
       tags:
         - Customer Blocklist
-  /api/blocklist/customers/{id}:
+  /blocklist/customers/{id}:
     get:
       description: Retrieves an existing blocked customer by ID
       operationId: get-customer-blocklist
@@ -103,7 +103,7 @@ paths:
       summary: Get customer blocklist entry
       tags:
         - Customer Blocklist
-  /api/open-banking/transactions:
+  /open-banking/transactions:
     get:
       description: Lists open banking transactions with pagination
       operationId: list-open-banking-transactions
@@ -168,7 +168,7 @@ paths:
       summary: Create open banking transaction
       tags:
         - Open Banking
-  /api/open-banking/transactions/{openBankingTransactionId}:
+  /open-banking/transactions/{openBankingTransactionId}:
     get:
       description: Retrieves an open banking transaction by ID
       operationId: get-open-banking-transaction
@@ -196,7 +196,7 @@ paths:
       summary: Get open banking transaction
       tags:
         - Open Banking
-  /api/payment:
+  /payment:
     get:
       description: Lists existing payments with pagination
       operationId: list-payments
@@ -266,7 +266,7 @@ paths:
       summary: Create payment
       tags:
         - Payment
-  /api/payment/batch:
+  /payment/batch:
     post:
       description: Creates multiple payments atomically. All payments succeed or none are created. Maximum 100 payments per batch.
       operationId: create-payment-batch
@@ -291,7 +291,7 @@ paths:
       summary: Create payments batch
       tags:
         - Payment
-  /api/payment/ptc:
+  /payment/ptc:
     post:
       description: Requests a new push-to-card payment
       operationId: create-payment-ptc
@@ -314,7 +314,7 @@ paths:
       summary: Create push-to-card payment
       tags:
         - Payment
-  /api/payment/{id}:
+  /payment/{id}:
     get:
       description: Retrieves an existing payment or refund by ID
       operationId: get-payment
@@ -343,7 +343,7 @@ paths:
       summary: Get payment or refund
       tags:
         - Payment
-  /api/payment/{id}/confirm:
+  /payment/{id}/confirm:
     post:
       description: Confirms an existing payment by ID
       operationId: confirm-payment
@@ -371,7 +371,7 @@ paths:
       summary: Confirm payment
       tags:
         - Payment
-  /api/payment/{id}/refund:
+  /payment/{id}/refund:
     post:
       description: Request payment refund
       operationId: create-refund
@@ -404,7 +404,7 @@ paths:
       summary: Create refund
       tags:
         - Payment
-  /api/webhooks:
+  /webhooks:
     get:
       description: Returns all webhooks for the authenticated merchant
       operationId: get-webhooks
@@ -450,7 +450,7 @@ paths:
       summary: Create webhook
       tags:
         - Webhooks
-  /api/webhooks/{webhookId}:
+  /webhooks/{webhookId}:
     delete:
       description: Deletes a webhook for the authenticated merchant
       operationId: delete-webhook
@@ -538,7 +538,7 @@ paths:
       summary: Update webhook
       tags:
         - Webhooks
-  /api/whitelist/card:
+  /whitelist/card:
     get:
       description: Lists whitelisted cards with pagination
       operationId: list-card-whitelist
@@ -603,7 +603,7 @@ paths:
       summary: Create card whitelist entries
       tags:
         - Card Whitelist
-  /api/whitelist/card/{id}:
+  /whitelist/card/{id}:
     get:
       description: Retrieves an existing whitelisted card by ID
       operationId: get-card-whitelist
