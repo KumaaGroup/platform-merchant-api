@@ -103,6 +103,38 @@ paths:
       summary: Get customer blocklist entry
       tags:
         - Customer Blocklist
+  /oauth2/token:
+    post:
+      description: Get token to authorize API operations
+      operationId: get-token
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AuthorizationRequest"
+              description: OAuth2 token request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      servers:
+        - description: test
+          url: https://test-auth.nonprod.paygate.systems
+        - description: sandbox
+          url: https://sandbox-auth.nonprod.paygate.systems
+      summary: Get Token
+      tags:
+        - Authorization
   /open-banking/transactions:
     get:
       description: Lists open banking transactions with pagination
@@ -633,6 +665,46 @@ paths:
         - Card Whitelist
 components:
   schemas:
+    AuthorizationRequest:
+      additionalProperties: false
+      properties:
+        client_id:
+          description: Provided client_id
+          type: string
+        client_secret:
+          description: Provided client secret
+          type: string
+        grant_type:
+          default: client_credentials
+          description: Grant type, always use 'client_credentials'
+          enum:
+            - client_credentials
+          type: string
+      required:
+        - client_id
+        - client_secret
+        - grant_type
+      type: object
+    AuthorizationResponse:
+      additionalProperties: false
+      properties:
+        access_token:
+          description: JWT access token
+          type: string
+        expires_in:
+          description: Token expiry time in seconds
+          example: 3600
+          format: int64
+          type: integer
+        token_type:
+          description: Token type
+          example: Bearer
+          type: string
+      required:
+        - access_token
+        - expires_in
+        - token_type
+      type: object
     BatchPaymentCreateData:
       additionalProperties: false
       properties:
