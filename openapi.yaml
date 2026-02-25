@@ -38,13 +38,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CustomerBlocklistListResponse"
+                $ref: '#/components/schemas/CustomerBlocklistListResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: List customer blocklist entries
       tags:
@@ -56,7 +56,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CustomerBlocklistCreateData"
+              allOf:
+                - $ref: '#/components/schemas/CustomerBlocklistCreateData'
               description: Customer blocklist creation data
         required: true
       responses:
@@ -64,13 +65,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CustomerBlocklistCreateResponse"
+                $ref: '#/components/schemas/CustomerBlocklistCreateResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Create customer blocklist entries
       tags:
@@ -92,13 +93,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CustomerBlocklistResponse"
+                $ref: '#/components/schemas/CustomerBlocklistResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Get customer blocklist entry
       tags:
@@ -111,7 +112,8 @@ paths:
         content:
           application/x-www-form-urlencoded:
             schema:
-              $ref: "#/components/schemas/AuthorizationRequest"
+              allOf:
+                - $ref: '#/components/schemas/AuthorizationRequest'
               description: OAuth2 token request
         required: true
       responses:
@@ -119,13 +121,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthorizationResponse"
+                $ref: '#/components/schemas/AuthorizationResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       servers:
         - description: test
@@ -163,13 +165,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OpenBankingTransactionListResponse"
+                $ref: '#/components/schemas/OpenBankingTransactionListResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: List open banking transactions
       tags:
@@ -181,7 +183,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/OpenBankingTransactionCreateData"
+              allOf:
+                - $ref: '#/components/schemas/OpenBankingTransactionCreateData'
               description: Open banking transaction creation data
         required: true
       responses:
@@ -189,13 +192,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OpenBankingTransactionCreatedResponse"
+                $ref: '#/components/schemas/OpenBankingTransactionCreatedResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Create open banking transaction
       tags:
@@ -217,13 +220,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OpenBankingTransactionResponse"
+                $ref: '#/components/schemas/OpenBankingTransactionResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Get open banking transaction
       tags:
@@ -265,13 +268,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaymentListResponse"
+                $ref: '#/components/schemas/PaymentListResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: List payments
       tags:
@@ -283,7 +286,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PaymentCreateData"
+              allOf:
+                - $ref: '#/components/schemas/PaymentCreateData'
               description: Payment creation data
         required: true
       responses:
@@ -291,59 +295,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaymentCreatedResponse"
+                $ref: '#/components/schemas/PaymentCreatedResponse'
           description: OK
         "422":
           description: Payment declined
       summary: Create payment
-      tags:
-        - Payment
-  /payment/batch:
-    post:
-      description: Creates multiple payments atomically. All payments succeed or none are created. Maximum 100 payments per batch.
-      operationId: create-payment-batch
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BatchPaymentCreateData"
-              description: Batch payment creation data
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BatchPaymentCreatedResponse"
-          description: All payments created successfully
-        "400":
-          description: "Invalid request: batch size exceeded, duplicate externalId in batch, or validation error"
-        "409":
-          description: Duplicate externalId conflicts with existing payment
-      summary: Create payments batch
-      tags:
-        - Payment
-  /payment/ptc:
-    post:
-      description: Requests a new push-to-card payment
-      operationId: create-payment-ptc
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PaymentPtcCreateData"
-              description: Push-to-card payment creation data
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaymentPtcCreatedResponse"
-          description: OK
-        "422":
-          description: Push-to-card payment declined
-      summary: Create push-to-card payment
       tags:
         - Payment
   /payment/{id}:
@@ -364,13 +320,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaymentPayloadResponse"
+                $ref: '#/components/schemas/PaymentPayloadResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Get payment or refund
       tags:
@@ -392,13 +348,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaymentConfirmedResponse"
+                $ref: '#/components/schemas/PaymentConfirmedResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Confirm payment
       tags:
@@ -419,7 +375,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RefundCreateData"
+              allOf:
+                - $ref: '#/components/schemas/RefundCreateData'
               description: Refund creation data
         required: true
       responses:
@@ -427,13 +384,63 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RefundCreatedResponse"
+                $ref: '#/components/schemas/RefundCreatedResponse'
           description: OK
         "201":
           description: Refund request submitted
         "422":
           description: Request unprocessable
       summary: Create refund
+      tags:
+        - Payment
+  /payment/batch:
+    post:
+      description: Creates multiple payments atomically. All payments succeed or none are created. Maximum 100 payments per batch.
+      operationId: create-payment-batch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/BatchPaymentCreateData'
+              description: Batch payment creation data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchPaymentCreatedResponse'
+          description: All payments created successfully
+        "400":
+          description: 'Invalid request: batch size exceeded, duplicate externalId in batch, or validation error'
+        "409":
+          description: Duplicate externalId conflicts with existing payment
+      summary: Create payments batch
+      tags:
+        - Payment
+  /payment/ptc:
+    post:
+      description: Requests a new push-to-card payment
+      operationId: create-payment-ptc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/PaymentPtcCreateData'
+              description: Push-to-card payment creation data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPtcCreatedResponse'
+          description: OK
+        "422":
+          description: Push-to-card payment declined
+      summary: Create push-to-card payment
       tags:
         - Payment
   /webhooks:
@@ -445,13 +452,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Webhooks"
+                $ref: '#/components/schemas/Webhooks'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: List webhooks
       tags:
@@ -463,7 +470,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WebhookCreateData"
+              allOf:
+                - $ref: '#/components/schemas/WebhookCreateData'
               description: Webhook creation data
         required: true
       responses:
@@ -471,13 +479,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Webhook"
+                $ref: '#/components/schemas/Webhook'
           description: Created
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Create webhook
       tags:
@@ -502,7 +510,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Delete webhook
       tags:
@@ -524,13 +532,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Webhook"
+                $ref: '#/components/schemas/Webhook'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Get webhook
       tags:
@@ -551,7 +559,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WebhookUpdateData"
+              allOf:
+                - $ref: '#/components/schemas/WebhookUpdateData'
               description: Webhook update data
         required: true
       responses:
@@ -559,13 +568,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Webhook"
+                $ref: '#/components/schemas/Webhook'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Update webhook
       tags:
@@ -598,13 +607,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CardWhitelistListResponse"
+                $ref: '#/components/schemas/CardWhitelistListResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: List card whitelist entries
       tags:
@@ -616,7 +625,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CardWhitelistCreateData"
+              allOf:
+                - $ref: '#/components/schemas/CardWhitelistCreateData'
               description: Card whitelist creation data
         required: true
       responses:
@@ -624,13 +634,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CardWhitelistCreateResponse"
+                $ref: '#/components/schemas/CardWhitelistCreateResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Create card whitelist entries
       tags:
@@ -652,13 +662,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CardWhitelistResponse"
+                $ref: '#/components/schemas/CardWhitelistResponse'
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ErrorModel"
+                $ref: '#/components/schemas/ErrorModel'
           description: Error
       summary: Get card whitelist entry
       tags:
@@ -709,9 +719,9 @@ components:
       additionalProperties: false
       properties:
         payments:
-          description: "Payments to create (max size is configurable, default: 100)"
+          description: 'Payments to create (max size is configurable, default: 100)'
           items:
-            $ref: "#/components/schemas/PaymentCreateData"
+            $ref: '#/components/schemas/PaymentCreateData'
           minItems: 1
           type: array
       required:
@@ -723,7 +733,7 @@ components:
         payments:
           description: Created payments, use externalId field to correlate with request items
           items:
-            $ref: "#/components/schemas/PaymentCreatedResponse"
+            $ref: '#/components/schemas/PaymentCreatedResponse'
           type: array
       required:
         - payments
@@ -802,7 +812,7 @@ components:
           type: string
         number:
           description: Masked card number
-          example: "************4242"
+          example: '************4242'
           type: string
       type: object
     CardWhitelistCreateData:
@@ -811,7 +821,7 @@ components:
         cards:
           description: List of cards to whitelist
           items:
-            $ref: "#/components/schemas/CardWhitelistCreateItem"
+            $ref: '#/components/schemas/CardWhitelistCreateItem'
           maxItems: 100
           minItems: 1
           type: array
@@ -843,7 +853,7 @@ components:
         items:
           description: Created card whitelist entries
           items:
-            $ref: "#/components/schemas/CardWhitelistResponse"
+            $ref: '#/components/schemas/CardWhitelistResponse'
           type: array
       required:
         - items
@@ -854,7 +864,7 @@ components:
         items:
           description: Card whitelist entries
           items:
-            $ref: "#/components/schemas/CardWhitelistResponse"
+            $ref: '#/components/schemas/CardWhitelistResponse'
           type: array
         nextCursor:
           description: Next cursor
@@ -898,7 +908,7 @@ components:
         customers:
           description: List of customers to block
           items:
-            $ref: "#/components/schemas/CustomerBlocklistCreateItem"
+            $ref: '#/components/schemas/CustomerBlocklistCreateItem'
           maxItems: 100
           minItems: 1
           type: array
@@ -931,7 +941,7 @@ components:
         items:
           description: Created blocklist entries
           items:
-            $ref: "#/components/schemas/CustomerBlocklistResponse"
+            $ref: '#/components/schemas/CustomerBlocklistResponse'
           type: array
       required:
         - items
@@ -942,7 +952,7 @@ components:
         items:
           description: Customer blocklist entries
           items:
-            $ref: "#/components/schemas/CustomerBlocklistResponse"
+            $ref: '#/components/schemas/CustomerBlocklistResponse'
           type: array
         nextCursor:
           description: Next cursor
@@ -1029,7 +1039,7 @@ components:
         errors:
           description: Optional list of individual error details
           items:
-            $ref: "#/components/schemas/ErrorDetail"
+            $ref: '#/components/schemas/ErrorDetail'
           type: array
         instance:
           description: A URI reference that identifies the specific occurrence of the problem.
@@ -1070,7 +1080,8 @@ components:
           description: Optional metadata (recommended JSON format)
           type: string
         sender:
-          $ref: "#/components/schemas/OpenBankingTransactionSender"
+          allOf:
+            - $ref: '#/components/schemas/OpenBankingTransactionSender'
           description: Sender information
         successUrl:
           description: Redirect URL on successful transaction
@@ -1118,7 +1129,7 @@ components:
         items:
           description: Transaction list
           items:
-            $ref: "#/components/schemas/OpenBankingTransactionResponse"
+            $ref: '#/components/schemas/OpenBankingTransactionResponse'
           type: array
         nextCursor:
           description: Next cursor
@@ -1163,7 +1174,8 @@ components:
           format: date-time
           type: string
         sender:
-          $ref: "#/components/schemas/OpenBankingTransactionSender"
+          allOf:
+            - $ref: '#/components/schemas/OpenBankingTransactionSender'
           description: Sender information
         status:
           description: Transaction status
@@ -1213,7 +1225,8 @@ components:
           pattern: ^[0-9]{3,4}$
           type: string
         expiry:
-          $ref: "#/components/schemas/CardExpiry"
+          allOf:
+            - $ref: '#/components/schemas/CardExpiry'
           description: Card expiry
         name:
           description: Cardholder name
@@ -1251,7 +1264,8 @@ components:
           minimum: 0.01
           type: number
         card:
-          $ref: "#/components/schemas/PaymentCard"
+          allOf:
+            - $ref: '#/components/schemas/PaymentCard'
           description: Card details
         currency:
           description: ISO4217 currency code
@@ -1259,7 +1273,8 @@ components:
           pattern: ^[A-Z]{3}$
           type: string
         customer:
-          $ref: "#/components/schemas/PaymentCustomer"
+          allOf:
+            - $ref: '#/components/schemas/PaymentCustomer'
           description: Customer information
         customerIp:
           description: Customer IP address
@@ -1331,7 +1346,8 @@ components:
       additionalProperties: false
       properties:
         billingAddress:
-          $ref: "#/components/schemas/BillingAddress"
+          allOf:
+            - $ref: '#/components/schemas/BillingAddress'
           description: Billing address
         email:
           description: Customer email
@@ -1370,7 +1386,7 @@ components:
         items:
           description: Payment list
           items:
-            $ref: "#/components/schemas/PaymentPayloadResponse"
+            $ref: '#/components/schemas/PaymentPayloadResponse'
           type: array
         nextCursor:
           description: Next cursor
@@ -1390,7 +1406,8 @@ components:
           format: decimal
           type: number
         card:
-          $ref: "#/components/schemas/CardPayloadResponse"
+          allOf:
+            - $ref: '#/components/schemas/CardPayloadResponse'
           description: Card details
         createdAt:
           description: Creation timestamp
@@ -1402,7 +1419,8 @@ components:
           example: USD
           type: string
         customer:
-          $ref: "#/components/schemas/CustomerResponse"
+          allOf:
+            - $ref: '#/components/schemas/CustomerResponse'
           description: Customer information
         externalId:
           description: External ID provided by merchant
@@ -1478,7 +1496,8 @@ components:
           minimum: 0.01
           type: number
         card:
-          $ref: "#/components/schemas/PaymentCard"
+          allOf:
+            - $ref: '#/components/schemas/PaymentCard'
           description: Card details
         currency:
           description: ISO4217 currency code
@@ -1621,7 +1640,7 @@ components:
         headers:
           description: Custom headers
           items:
-            $ref: "#/components/schemas/WebhookHeader"
+            $ref: '#/components/schemas/WebhookHeader'
           type: array
         id:
           description: Webhook ID
@@ -1657,7 +1676,7 @@ components:
         headers:
           description: Custom headers (max 5)
           items:
-            $ref: "#/components/schemas/WebhookHeader"
+            $ref: '#/components/schemas/WebhookHeader'
           maxItems: 5
           type: array
         url:
@@ -1697,7 +1716,7 @@ components:
         headers:
           description: Custom headers (max 5)
           items:
-            $ref: "#/components/schemas/WebhookHeader"
+            $ref: '#/components/schemas/WebhookHeader'
           maxItems: 5
           type: array
         url:
@@ -1713,6 +1732,6 @@ components:
         items:
           description: List of webhooks
           items:
-            $ref: "#/components/schemas/Webhook"
+            $ref: '#/components/schemas/Webhook'
           type: array
       type: object
