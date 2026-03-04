@@ -26,6 +26,8 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_a
 - **Full refund** — omit the `amount` field. The entire payment amount is refunded.
 - **Partial refund** — provide an `amount` less than or equal to the original payment amount.
 
+> **Note:** Partial refunds are not always available. Depending on the payment processing path, some payments only support full refunds. If you request a partial refund on a payment that does not support it, the API returns an error. When this happens, you can request a full refund instead.
+
 ### Response
 
 **200 OK** — refund processed immediately:

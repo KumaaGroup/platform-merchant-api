@@ -4,6 +4,8 @@ Open banking transactions allow your customers to pay directly from their bank a
 
 All open banking transactions are processed in **EUR**.
 
+> **Note:** Testing open banking transactions is currently not available in the sandbox environment. The documentation below describes the production integration flow for reference.
+
 ## Create a Transaction
 
 ```bash

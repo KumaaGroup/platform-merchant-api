@@ -2,6 +2,16 @@
 
 Webhooks notify your server in real time when events occur — such as a payment being completed or an open banking transfer finishing. Instead of polling the API, you register a URL and the platform sends HTTP POST requests to it whenever a relevant event happens.
 
+## Why Webhooks Are Essential
+
+The Platform Merchants API is **asynchronous** in many scenarios. When you create a payment, the initial response confirms the request was accepted, but the final outcome (captured, declined, etc.) is determined later during processing. The same applies to refunds, open banking transfers, and other operations.
+
+**Webhook configuration is required** to reliably know when a payment has been captured or declined. Without webhooks, you would need to continuously poll the API for status changes, which is inefficient and may miss time-sensitive updates.
+
+### Automatic Re-delivery
+
+If your webhook endpoint is temporarily unavailable or returns a non-2xx status code, the platform automatically retries delivery. This ensures you do not miss events due to intermittent failures on your side.
+
 ## Create a Webhook
 
 ```bash
