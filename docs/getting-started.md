@@ -29,10 +29,10 @@ Once your account is approved and active, you can access the **Merchant Backoffi
 
 From the backoffice portal you can:
 
-- Manage users and access permissions
-- Enable multi-factor authentication (MFA) for your team
-- View and retrieve your API credentials
-- Monitor transactions and account activity
+- Monitor transactions and payment activity
+- Invite additional users to the dashboard
+
+> **Note:** MFA is enabled by default for all users and cannot be disabled. API credentials are provided via email during onboarding and cannot be retrieved from the portal.
 
 ## Quick Start
 
