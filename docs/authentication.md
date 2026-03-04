@@ -114,9 +114,9 @@ class MerchantAPIClient:
 
 ## IP Whitelisting
 
-For additional security, you can enable **IP whitelisting** on your merchant account. When enabled, the API only accepts requests from IP addresses you have explicitly approved. Requests from any other IP address are rejected.
+IP whitelisting adds an extra layer of security by restricting API access to a predefined set of IP addresses. When enabled, requests from any non-whitelisted IP are rejected with a `403` error.
 
-IP whitelisting is **turned off by default**. To enable it, contact the platform administration team with your request. Once the administration team has enabled IP whitelisting for your account, you can manage your allowed IP addresses from the [Merchant Backoffice Portal](https://sandbox-backoffice.nonprod.paygate.systems).
+IP whitelisting is **managed entirely by platform administrators**. To enable it or update your allowed IP addresses, contact your platform admin and provide the server IPs that should be permitted. The admin will configure the whitelist on your behalf.
 
 This is recommended for production integrations where your API calls originate from a fixed set of servers with known IP addresses.
 
@@ -125,7 +125,7 @@ This is recommended for production integrations where your API calls originate f
 - **Never expose credentials client-side.** All API calls must originate from your backend server.
 - **Store `client_id` and `client_secret` securely.** Use environment variables or a secrets manager — never commit them to source control.
 - **Use HTTPS exclusively.** All API endpoints require HTTPS. Plain HTTP requests are rejected.
-- **Enable IP whitelisting.** Request IP whitelisting from the platform administration to restrict API access to your known server IP addresses.
+- **Enable IP whitelisting.** Contact your platform admin to restrict API access to your known server IP addresses.
 - **Rotate credentials periodically.** Contact support to rotate your client secret if you suspect it has been compromised.
 
 ## Error Responses
@@ -134,5 +134,5 @@ This is recommended for production integrations where your API calls originate f
 |--------|--------------------------|---------------------------------------------|
 | 400    | Invalid request          | Check `grant_type` and credential format    |
 | 401    | Invalid credentials      | Verify `client_id` and `client_secret`      |
-| 403    | IP not whitelisted       | Request IP whitelisting enablement from administration, then add your server IP in the backoffice portal |
+| 403    | IP not whitelisted       | Contact your platform admin to add your server IP to the whitelist |
 | 500    | Server error             | Retry with exponential backoff              |
