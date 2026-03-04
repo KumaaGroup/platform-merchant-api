@@ -85,7 +85,16 @@ curl https://sandbox-merchants-api.nonprod.paygate.systems/blocklist/customers/b
 
 ## Card Whitelist
 
-Restrict transactions to only cards that have been explicitly whitelisted. Cards are identified by their BIN code and last 4 digits.
+Depending on your merchant account configuration, payments may be processed in one of two modes:
+
+- **Trusted mode** — all cards are accepted without prior registration. This is the default for most accounts.
+- **Whitelist mode** — only pre-approved cards can be used for payments. Every card must be whitelisted before a payment can be processed with it.
+
+If your account requires card whitelisting, you must call the card whitelist API for each card you intend to use for payments. An accepted whitelisting request triggers a **cooldown period of approximately 72 hours** before the card becomes active and can be used for an actual payment. During the cooldown, the `cooldownExpiresAt` field on the whitelist entry indicates when the card will be ready.
+
+> **Important:** Attempting a payment with a card that has not been whitelisted (or is still in cooldown) will result in a declined payment.
+
+You can check whether your account requires card whitelisting from the [Merchant Backoffice Portal](https://sandbox-backoffice.nonprod.paygate.systems).
 
 ### Whitelist Cards
 
@@ -143,7 +152,7 @@ curl "https://sandbox-merchants-api.nonprod.paygate.systems/whitelist/card?limit
 }
 ```
 
-The `cooldownExpiresAt` field indicates when a cooldown period expires for a recently added card. During the cooldown period, the whitelisted card may not yet be active.
+The `cooldownExpiresAt` field indicates when the cooldown period expires for a recently added card. During the cooldown period (approximately 72 hours), the whitelisted card is not yet active and cannot be used for payments. Once `cooldownExpiresAt` is `null` or in the past, the card is ready for use.
 
 ### Get a Whitelisted Card Entry
 
@@ -165,3 +174,4 @@ curl https://sandbox-merchants-api.nonprod.paygate.systems/whitelist/card/wl_abc
 - Restrict payments to a known set of corporate cards during a closed beta.
 - Limit transactions to pre-verified cards for high-value merchants.
 - Gradually roll out access by whitelisting cards in batches.
+- Plan ahead for the 72-hour cooldown when onboarding new cards.

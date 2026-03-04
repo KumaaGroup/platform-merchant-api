@@ -58,7 +58,11 @@ Response:
 
 See [Authentication](authentication.md) for full details on token management.
 
-### 2. Create a payment
+### 2. Whitelist cards (if required)
+
+Depending on your merchant account configuration, you may need to whitelist cards before processing payments. If card whitelisting is enabled on your account, register each card and allow approximately 72 hours for the cooldown period to expire. See [Card Whitelist](blocklist-and-whitelist.md#card-whitelist) for details.
+
+### 3. Create a payment
 
 Use the access token to create a card payment.
 
@@ -103,14 +107,14 @@ Response:
 
 If 3D Secure is required, the response includes an `actionUrl`. Redirect the customer to that URL to complete authentication.
 
-### 3. Check payment status
+### 4. Check payment status
 
 ```bash
 curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_abc123 \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-### 4. Set up a webhook (optional)
+### 5. Set up a webhook (optional)
 
 Receive real-time notifications when payment status changes.
 
