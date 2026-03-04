@@ -18,10 +18,11 @@ sequenceDiagram
     participant C as Customer
 
     M->>API: POST /payment (card details, amount)
-    API->>I: Authorization request
+    API-->>M: 200 status=REQUESTED
+    API->>I: Start payment workflow
     alt 3DS required
         I-->>API: 3DS challenge required
-        API-->>M: 200 status=AUTH_REQUESTED, actionUrl
+        API-->>M: Webhook: status=AUTH_REQUESTED (includes actionUrl)
         M->>C: Redirect to actionUrl
         C->>I: Complete 3DS authentication
         alt 3DS approved
@@ -34,7 +35,7 @@ sequenceDiagram
         I-->>C: Redirect to successUrl / failureUrl
     else No 3DS
         I-->>API: Authorization approved
-        API-->>M: 200 status=AUTHORIZED
+        API-->>M: Webhook: status=AUTHORIZED
     end
     Note over API: Capture & settlement
     API-->>M: Webhook: status=CAPTURED
@@ -112,8 +113,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
 {
   "id": "pay_abc123",
   "externalId": "order-001",
-  "status": "AUTH_REQUESTED",
-  "actionUrl": "https://3ds.example.com/auth/xyz"
+  "status": "REQUESTED"
 }
 ```
 
@@ -121,8 +121,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
 |-------------|--------|----------------------------------------------------|
 | `id`        | string | Platform-generated payment ID                      |
 | `externalId`| string | Your provided identifier                           |
-| `status`    | string | Initial payment status                             |
-| `actionUrl` | string | 3DS redirect URL (only present when 3DS is needed) |
+| `status`    | string | Initial payment status (always `REQUESTED`)        |
 
 ### Status Codes
 
@@ -134,30 +133,11 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
 
 ## 3D Secure (3DS)
 
-When the payment requires 3D Secure authentication, the response includes an `actionUrl`. You must redirect the customer to this URL to complete the authentication.
+When a payment is created, it starts in `REQUESTED` status and the payment workflow begins. If the platform determines that 3D Secure authentication is required, the payment status changes to `AUTH_REQUESTED`.
 
-After the customer completes 3DS, they are redirected to your `successUrl` or `failureUrl`. The payment status updates accordingly.
+The 3DS challenge URL (`actionUrl`) is delivered via a [webhook](webhooks.md) notification for `CARD_PAYMENT` events. It is also available by calling [GET /payment/{id}](#get-payment-details). The `actionUrl` is **never** included in the create payment response.
 
-If you provided a [webhook](webhooks.md) for `CARD_PAYMENT` events, you will also receive a notification when the payment status changes.
-
-## Confirm a Payment
-
-Some payments may enter a `PENDING` state that requires explicit confirmation.
-
-```bash
-curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_abc123/confirm \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
-Response:
-
-```json
-{
-  "id": "pay_abc123",
-  "externalId": "order-001",
-  "status": "AUTHORIZED"
-}
-```
+Once you receive the `actionUrl`, redirect the customer to complete the 3DS challenge. After authentication, the customer is redirected to your `successUrl` or `failureUrl`, and the payment status updates accordingly via webhook.
 
 ## Payment Lifecycle
 
