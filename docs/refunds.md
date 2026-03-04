@@ -86,9 +86,23 @@ The response includes a `parentPaymentId` field linking the refund back to the o
 ## Refund Lifecycle
 
 ```
-REQUESTED → COMPLETED
-          ↘ DECLINED
+REQUESTED → PENDING ──────────────→ APPROVED → COMPLETED
+          → PENDING_APPROVAL → APPROVED ↗   ↘ DECLINED
+          ↘ INVALID              ↘ REJECTED
 ```
+
+| Status             | Description                                                                                     |
+|--------------------|-------------------------------------------------------------------------------------------------|
+| `REQUESTED`        | Refund submitted, initial validation in progress                                                |
+| `PENDING`          | Validation passed, refund auto-approved (within threshold)                                      |
+| `PENDING_APPROVAL` | Refund requires manual approval by platform administration (threshold exceeded or auto-approval disabled) |
+| `APPROVED`         | Refund approved, being sent to the payment processor                                            |
+| `COMPLETED`        | Refund successfully processed (terminal)                                                        |
+| `DECLINED`         | Refund declined by the payment processor (terminal)                                             |
+| `REJECTED`         | Refund rejected during manual review (terminal)                                                 |
+| `INVALID`          | Refund failed initial validation, e.g. duplicate `externalId` or invalid amount (terminal)      |
+
+> **Note:** When querying refund status, a `PENDING_APPROVAL` state means the refund is waiting for the platform administration to review and approve it. No action is required from the merchant — the administration team will process the approval.
 
 ## Best Practices
 
