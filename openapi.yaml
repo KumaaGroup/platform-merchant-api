@@ -581,9 +581,7 @@ paths:
         - Webhooks
   /whitelist/card:
     get:
-      description: >-
-        Lists whitelisted cards with pagination.
-        Use this endpoint to check which cards have been whitelisted and whether their cooldown period has expired.
+      description: Lists whitelisted cards with pagination
       operationId: list-card-whitelist
       parameters:
         - description: Cursor for pagination
@@ -621,10 +619,7 @@ paths:
       tags:
         - Card Whitelist
     post:
-      description: >-
-        Whitelists multiple cards by BIN code and last 4 digits.
-        Card whitelisting is required when the merchant account is configured in whitelist mode.
-        Each whitelisted card enters an approximately 72-hour cooldown period before it can be used for payments.
+      description: Whitelists multiple cards by BIN code and last 4 digits
       operationId: create-card-whitelist
       requestBody:
         content:
@@ -652,9 +647,7 @@ paths:
         - Card Whitelist
   /whitelist/card/{id}:
     get:
-      description: >-
-        Retrieves an existing whitelisted card by ID.
-        Check the cooldownExpiresAt field to determine if the card is ready for payments.
+      description: Retrieves an existing whitelisted card by ID
       operationId: get-card-whitelist
       parameters:
         - description: card whitelist ID
@@ -887,10 +880,7 @@ components:
           example: "424242"
           type: string
         cooldownExpiresAt:
-          description: >-
-            Cooldown expiration timestamp. After whitelisting, a card enters an approximately 72-hour cooldown period
-            during which it cannot be used for payments. The card becomes active once this timestamp is in the past.
-            A null value indicates the card is immediately active (cooldown has been skipped or has expired).
+          description: Cooldown expiration timestamp
           format: date-time
           type: string
         createdAt:
