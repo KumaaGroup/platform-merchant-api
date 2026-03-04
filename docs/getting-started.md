@@ -2,14 +2,11 @@
 
 The Platform Merchants API lets you accept card payments, process refunds, initiate open banking transfers, and manage webhooks — all through a single REST API.
 
-## Base URLs
+## Base URL
 
 | Environment | URL                                                        |
 |-------------|------------------------------------------------------------|
-| Test        | `https://test-merchants-api.nonprod.paygate.systems`       |
 | Sandbox     | `https://sandbox-merchants-api.nonprod.paygate.systems`    |
-
-Use the **test** environment while building your integration. Move to **sandbox** for pre-production validation.
 
 ## Prerequisites
 
@@ -18,6 +15,23 @@ Before you begin, make sure you have:
 - A merchant account with API credentials (`client_id` and `client_secret`)
 - HTTPS capability for receiving webhooks
 
+### Obtaining Your Credentials
+
+API credentials are available only after your merchant account has been successfully onboarded. To start the onboarding process, visit:
+
+**[https://sandbox-backoffice.nonprod.paygate.systems/onboarding/register](https://sandbox-backoffice.nonprod.paygate.systems/onboarding/register)**
+
+Once your account is approved and active, you can access the **Merchant Backoffice Portal** at:
+
+**[https://sandbox-backoffice.nonprod.paygate.systems](https://sandbox-backoffice.nonprod.paygate.systems)**
+
+From the backoffice portal you can:
+
+- Manage users and access permissions
+- Enable multi-factor authentication (MFA) for your team
+- View and retrieve your API credentials
+- Monitor transactions and account activity
+
 ## Quick Start
 
 ### 1. Obtain an access token
@@ -25,7 +39,7 @@ Before you begin, make sure you have:
 Exchange your credentials for a Bearer token using the OAuth2 client credentials flow.
 
 ```bash
-curl -X POST https://test-merchants-api.nonprod.paygate.systems/oauth2/token \
+curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=YOUR_CLIENT_ID" \
   -d "client_secret=YOUR_CLIENT_SECRET" \
@@ -49,7 +63,7 @@ See [Authentication](authentication.md) for full details on token management.
 Use the access token to create a card payment.
 
 ```bash
-curl -X POST https://test-merchants-api.nonprod.paygate.systems/payment \
+curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -92,7 +106,7 @@ If 3D Secure is required, the response includes an `actionUrl`. Redirect the cus
 ### 3. Check payment status
 
 ```bash
-curl https://test-merchants-api.nonprod.paygate.systems/payment/pay_abc123 \
+curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_abc123 \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
@@ -101,7 +115,7 @@ curl https://test-merchants-api.nonprod.paygate.systems/payment/pay_abc123 \
 Receive real-time notifications when payment status changes.
 
 ```bash
-curl -X POST https://test-merchants-api.nonprod.paygate.systems/webhooks \
+curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/webhooks \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -151,9 +165,11 @@ All errors follow the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) 
 
 ## Next Steps
 
-- [Authentication](authentication.md) — Token lifecycle and refresh strategy
-- Card Payments — Full payment flows, batch payments, and push-to-card
-- Refunds — Full and partial refund processing
-- Open Banking — Bank transfer transactions
-- Webhooks — Event notifications setup
-- Error Handling — Error codes and troubleshooting
+- [Authentication](authentication.md) — Token lifecycle, refresh strategy, and IP whitelisting
+- [Idempotency](idempotency.md) — How `externalId` prevents duplicate transactions
+- [Card Payments](card-payments.md) — Full payment flows, batch payments, and push-to-card
+- [Refunds](refunds.md) — Full and partial refund processing
+- [Open Banking](open-banking.md) — Bank transfer transactions
+- [Webhooks](webhooks.md) — Event notifications setup
+- [Error Handling](error-handling.md) — Error codes and troubleshooting
+- [Blocklist and Whitelist](blocklist-and-whitelist.md) — Managing blocked customers and allowed cards

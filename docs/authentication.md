@@ -5,7 +5,7 @@ The Platform Merchants API uses **OAuth2 Client Credentials** for authentication
 ## Obtaining an Access Token
 
 ```bash
-curl -X POST https://test-merchants-api.nonprod.paygate.systems/oauth2/token \
+curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=YOUR_CLIENT_ID" \
   -d "client_secret=YOUR_CLIENT_SECRET" \
@@ -43,7 +43,7 @@ The request body must be sent as `application/x-www-form-urlencoded`.
 Include the access token in the `Authorization` header of every API request:
 
 ```bash
-curl https://test-merchants-api.nonprod.paygate.systems/payment \
+curl https://sandbox-merchants-api.nonprod.paygate.systems/payment \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
@@ -62,17 +62,18 @@ Rather than requesting a new token for every API call or waiting for a `401` err
 4. If you receive a 401 response, request a new token immediately and retry
 ```
 
-### Example (pseudocode)
+### Example (Python)
 
 ```python
 import time
 import requests
 
 class MerchantAPIClient:
-    def __init__(self, client_id, client_secret, base_url):
+    BASE_URL = "https://sandbox-merchants-api.nonprod.paygate.systems"
+
+    def __init__(self, client_id, client_secret):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.base_url = base_url
         self.token = None
         self.token_expiry = 0
 
@@ -81,7 +82,7 @@ class MerchantAPIClient:
             return self.token
 
         response = requests.post(
-            f"{self.base_url}/oauth2/token",
+            f"{self.BASE_URL}/oauth2/token",
             data={
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
@@ -97,34 +98,34 @@ class MerchantAPIClient:
     def request(self, method, path, **kwargs):
         headers = {"Authorization": f"Bearer {self.get_token()}"}
         response = requests.request(
-            method, f"{self.base_url}{path}", headers=headers, **kwargs
+            method, f"{self.BASE_URL}{path}", headers=headers, **kwargs
         )
 
         if response.status_code == 401:
             self.token = None
             headers = {"Authorization": f"Bearer {self.get_token()}"}
             response = requests.request(
-                method, f"{self.base_url}{path}", headers=headers, **kwargs
+                method, f"{self.BASE_URL}{path}", headers=headers, **kwargs
             )
 
         return response
 ```
+
+## IP Whitelisting
+
+For additional security, you can enable **IP whitelisting** on your merchant account. When enabled, the API only accepts requests from IP addresses you have explicitly approved. Requests from any other IP address are rejected.
+
+IP whitelisting is **turned off by default**. You can enable it and manage your allowed IP addresses from the [Merchant Backoffice Portal](https://sandbox-backoffice.nonprod.paygate.systems).
+
+This is recommended for production integrations where your API calls originate from a fixed set of servers with known IP addresses.
 
 ## Security Best Practices
 
 - **Never expose credentials client-side.** All API calls must originate from your backend server.
 - **Store `client_id` and `client_secret` securely.** Use environment variables or a secrets manager — never commit them to source control.
 - **Use HTTPS exclusively.** All API endpoints require HTTPS. Plain HTTP requests are rejected.
+- **Enable IP whitelisting.** Restrict API access to your known server IP addresses for an extra layer of protection.
 - **Rotate credentials periodically.** Contact support to rotate your client secret if you suspect it has been compromised.
-
-## Auth Server URLs
-
-The authentication endpoint uses environment-specific URLs:
-
-| Environment | Auth URL                                                        |
-|-------------|-----------------------------------------------------------------|
-| Test        | `https://test-merchants-api.nonprod.paygate.systems/oauth2/token` |
-| Sandbox     | `https://sandbox-merchants-api.nonprod.paygate.systems/oauth2/token` |
 
 ## Error Responses
 
@@ -132,4 +133,5 @@ The authentication endpoint uses environment-specific URLs:
 |--------|--------------------------|---------------------------------------------|
 | 400    | Invalid request          | Check `grant_type` and credential format    |
 | 401    | Invalid credentials      | Verify `client_id` and `client_secret`      |
+| 403    | IP not whitelisted       | Add your server IP in the backoffice portal |
 | 500    | Server error             | Retry with exponential backoff              |
