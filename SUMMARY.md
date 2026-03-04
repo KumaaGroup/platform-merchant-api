@@ -1,6 +1,6 @@
 # Table of contents
 
-* [docs](README.md)
+* [Platform Merchants API](README.md)
   * [Authentication](docs/authentication.md)
   * [Blocklist and Whitelist](docs/blocklist-and-whitelist.md)
   * [Card Payments](docs/card-payments.md)
