@@ -256,3 +256,98 @@ When `useRefunds` is `true`, the platform first applies any available refund bal
   "message": "Push-to-card payment initiated"
 }
 ```
+
+## Testing
+
+Use the following test card numbers in the **sandbox** environment to simulate different payment outcomes. All test cards can use any future expiry date and any 3-digit CVC.
+
+### Visa — Approved
+
+| Card Number          | Outcome            |
+|----------------------|--------------------|
+| `4761344136141390`   | Approved           |
+| `4761201381475297`   | Approved           |
+| `4159129252458086`   | Approved           |
+| `4123407439043051`   | Approved           |
+| `4001888687412469`   | Approved           |
+| `4444493318246892`   | Approved           |
+| `4000287447386587`   | Approved (debit)   |
+
+### Visa — Declined
+
+| Card Number          | Reason                          |
+|----------------------|---------------------------------|
+| `4008370896662369`   | General decline                 |
+| `4008384424370890`   | Insufficient funds              |
+| `4000157454627969`   | Lost/stolen card                |
+| `4000247422310226`   | Expired card                    |
+| `4000254588011960`   | Transaction not permitted       |
+| `4000203016321921`   | Invalid transaction             |
+| `4000189336416410`   | Exceeds withdrawal limit        |
+| `4000196948974975`   | Exceeds withdrawal frequency    |
+| `4000273652260030`   | Restricted card                 |
+| `4000229544877670`   | Issuer/switch inoperative       |
+| `4000234977370839`   | Timeout                         |
+| `4000128449498204`   | External processing error       |
+| `4000212384978055`   | Format error                    |
+
+### Visa — 3D Secure
+
+| Card Number          | Outcome                                  |
+|----------------------|------------------------------------------|
+| `4000020951595032`   | 3DS approved (frictionless)              |
+| `4000027891380961`   | 3DS approved (with fingerprinting)       |
+| `4000319872807223`   | 3DS declined                             |
+| `4567491000001113`   | Frictionless flow (use amount `83.10`)   |
+| `4567491000002228`   | Challenge flow (use amount `115.20`)     |
+
+### Mastercard — Approved
+
+| Card Number          | Outcome            |
+|----------------------|--------------------|
+| `5101081046006034`   | Approved           |
+| `5101084411423750`   | Approved           |
+| `5333304500657872`   | Approved           |
+| `5333308664112277`   | Approved           |
+| `5550345228382224`   | Approved           |
+| `5550347471347813`   | Approved           |
+| `2222755234426838`   | Approved           |
+| `2221004483162815`   | Approved           |
+
+### Mastercard — Declined
+
+| Card Number          | Reason                          |
+|----------------------|---------------------------------|
+| `5333418445863914`   | General decline                 |
+| `5001638548736201`   | General decline                 |
+| `5333475572200849`   | Insufficient funds              |
+| `5333452804487502`   | Lost/stolen card                |
+| `5333540337444022`   | Expired card                    |
+| `5333554636535091`   | Transaction not permitted       |
+| `5333502383316074`   | Invalid transaction             |
+| `5333482348715142`   | Exceeds withdrawal limit        |
+| `5333498929343773`   | Exceeds withdrawal frequency    |
+| `5333578626428553`   | Restricted card                 |
+| `5333527145351713`   | Issuer/switch inoperative       |
+| `5333532915594096`   | Timeout                         |
+| `5333423768173347`   | External processing error       |
+| `5333518577223892`   | Format error                    |
+| `5333583123003909`   | Invalid CVV                     |
+| `5333463046218753`   | Do not honor                    |
+
+### Mastercard — 3D Secure
+
+| Card Number          | Outcome                                  |
+|----------------------|------------------------------------------|
+| `5333302221254276`   | 3DS approved (frictionless)              |
+| `2221008123677736`   | 3DS approved (with fingerprinting)       |
+| `5333418445863914`   | 3DS declined                             |
+| `5545060700001113`   | Frictionless flow (use amount `83.10`)   |
+| `5545060700002228`   | Challenge flow (use amount `115.20`)     |
+
+### Testing Tips
+
+- Use any future expiry date (e.g. `12/2027`) and any 3-digit CVC (e.g. `123`).
+- For 3DS challenge/frictionless flow cards, use the specific amounts noted in the table to trigger the expected behavior.
+- Provide `successUrl` and `failureUrl` when testing 3DS flows so you can observe the redirect behavior.
+- Use a unique `externalId` for each test payment to avoid `409 Conflict` errors.
