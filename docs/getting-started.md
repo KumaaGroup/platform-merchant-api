@@ -39,7 +39,7 @@ From the backoffice portal you can:
 Exchange your credentials for a Bearer token using the OAuth2 client credentials flow.
 
 ```bash
-curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/oauth2/token \
+curl -X POST https://sandbox-auth.nonprod.paygate.systems/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=YOUR_CLIENT_ID" \
   -d "client_secret=YOUR_CLIENT_SECRET" \

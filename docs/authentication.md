@@ -5,7 +5,7 @@ The Platform Merchants API uses **OAuth2 Client Credentials** for authentication
 ## Obtaining an Access Token
 
 ```bash
-curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/oauth2/token \
+curl -X POST https://sandbox-auth.nonprod.paygate.systems/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=YOUR_CLIENT_ID" \
   -d "client_secret=YOUR_CLIENT_SECRET" \
@@ -69,7 +69,8 @@ import time
 import requests
 
 class MerchantAPIClient:
-    BASE_URL = "https://sandbox-merchants-api.nonprod.paygate.systems"
+    AUTH_URL = "https://sandbox-auth.nonprod.paygate.systems"
+    API_URL = "https://sandbox-merchants-api.nonprod.paygate.systems"
 
     def __init__(self, client_id, client_secret):
         self.client_id = client_id
@@ -82,7 +83,7 @@ class MerchantAPIClient:
             return self.token
 
         response = requests.post(
-            f"{self.BASE_URL}/oauth2/token",
+            f"{self.AUTH_URL}/oauth2/token",
             data={
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
@@ -98,14 +99,14 @@ class MerchantAPIClient:
     def request(self, method, path, **kwargs):
         headers = {"Authorization": f"Bearer {self.get_token()}"}
         response = requests.request(
-            method, f"{self.BASE_URL}{path}", headers=headers, **kwargs
+            method, f"{self.API_URL}{path}", headers=headers, **kwargs
         )
 
         if response.status_code == 401:
             self.token = None
             headers = {"Authorization": f"Bearer {self.get_token()}"}
             response = requests.request(
-                method, f"{self.BASE_URL}{path}", headers=headers, **kwargs
+                method, f"{self.API_URL}{path}", headers=headers, **kwargs
             )
 
         return response
