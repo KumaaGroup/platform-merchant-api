@@ -46,7 +46,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorModel'
           description: Error
-      summary: List customer blocklist entries
+      summary: List customer blocklist records
       tags:
         - Customer Blocklist
     post:
