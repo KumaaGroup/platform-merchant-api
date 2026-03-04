@@ -6,6 +6,41 @@ The Platform Merchants API supports single payments, batch payments, and push-to
 
 Depending on your merchant account configuration, cards may need to be [whitelisted](blocklist-and-whitelist.md#card-whitelist) before they can be used for payments. If your account has card whitelisting enabled, you must register each card via the whitelist API and wait for the ~72-hour cooldown period to expire before processing a payment. Payments attempted with non-whitelisted or cooldown-active cards will be declined.
 
+## Single Payment Flow
+
+The following diagram shows the full sequence for creating a card payment, including the optional 3D Secure authentication step:
+
+```mermaid
+sequenceDiagram
+    participant M as Merchant
+    participant API as Merchants API
+    participant I as Card Issuer
+    participant C as Customer
+
+    M->>API: POST /payment (card details, amount)
+    API->>I: Authorization request
+    alt 3DS required
+        I-->>API: 3DS challenge required
+        API-->>M: 200 status=AUTH_REQUESTED, actionUrl
+        M->>C: Redirect to actionUrl
+        C->>I: Complete 3DS authentication
+        alt 3DS approved
+            I-->>API: 3DS success
+            API-->>M: Webhook: status=AUTHORIZED
+        else 3DS failed
+            I-->>API: 3DS failure
+            API-->>M: Webhook: status=DECLINED
+        end
+        I-->>C: Redirect to successUrl / failureUrl
+    else No 3DS
+        I-->>API: Authorization approved
+        API-->>M: 200 status=AUTHORIZED
+    end
+    Note over API: Capture & settlement
+    API-->>M: Webhook: status=CAPTURED
+    API-->>M: Webhook: status=COMPLETED
+```
+
 ## Create a Payment
 
 ```bash
@@ -126,10 +161,25 @@ Response:
 
 ## Payment Lifecycle
 
-```
-AUTH_REQUESTED → AUTHORIZED → CAPTURED → COMPLETED
-                    ↓                        ↓
-                DECLINED                 TRANSFERRED
+```mermaid
+stateDiagram-v2
+    [*] --> AUTH_REQUESTED
+    [*] --> REQUESTED
+    AUTH_REQUESTED --> AUTHORIZED
+    AUTH_REQUESTED --> DECLINED
+    AUTHORIZED --> CAPTURED
+    AUTHORIZED --> DECLINED
+    CAPTURED --> COMPLETED
+    COMPLETED --> TRANSFERRED
+    REQUESTED --> PENDING
+    PENDING --> PENDING_APPROVAL
+    PENDING_APPROVAL --> APPROVED
+    PENDING_APPROVAL --> REJECTED
+    APPROVED --> COMPLETED
+    DECLINED --> [*]
+    REJECTED --> [*]
+    TRANSFERRED --> [*]
+    INVALID --> [*]
 ```
 
 | Status             | Description                                          |
@@ -175,6 +225,23 @@ The response includes a `nextCursor` field. Pass it as the `cursor` parameter to
 
 ## Batch Payments
 
+```mermaid
+sequenceDiagram
+    participant M as Merchant
+    participant API as Merchants API
+
+    M->>API: POST /payment/batch (up to 100 payments)
+    API->>API: Validate all payments
+    alt All valid
+        API-->>M: 200 all payments created
+        loop For each payment
+            API-->>M: Webhook: status updates
+        end
+    else Any invalid
+        API-->>M: 400 entire batch rejected
+    end
+```
+
 Create up to 100 payments in a single atomic request. All payments succeed or none are created.
 
 ```bash
@@ -216,6 +283,22 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/batch
 | 409  | Duplicate `externalId` conflict              |
 
 ## Push-to-Card
+
+```mermaid
+sequenceDiagram
+    participant M as Merchant
+    participant API as Merchants API
+    participant C as Card
+
+    M->>API: POST /payment/ptc (card, amount, useRefunds)
+    alt useRefunds = true
+        API->>API: Apply available refund balances (last 180 days)
+        Note over API: Remaining amount pushed to card
+    end
+    API->>C: Push funds
+    API-->>M: 200 status=REQUESTED
+    API-->>M: Webhook: status updates
+```
 
 Push funds directly to a customer's card. This is useful for disbursements, payouts, or refunds to a different card.
 
