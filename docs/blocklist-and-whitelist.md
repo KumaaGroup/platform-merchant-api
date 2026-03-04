@@ -59,13 +59,13 @@ curl "https://sandbox-merchants-api.nonprod.paygate.systems/blocklist/customers?
 {
   "items": [
     {
-      "id": "bl_abc123",
+      "id": "blc_abc123",
       "binCode": "411111",
       "last4": "1111",
       "createdAt": "2026-03-04T12:00:00Z"
     },
     {
-      "id": "bl_def456",
+      "id": "blc_def456",
       "email": "fraudster@example.com",
       "createdAt": "2026-03-04T12:01:00Z"
     }
@@ -77,7 +77,7 @@ curl "https://sandbox-merchants-api.nonprod.paygate.systems/blocklist/customers?
 ### Get a Blocked Customer Entry
 
 ```bash
-curl https://sandbox-merchants-api.nonprod.paygate.systems/blocklist/customers/bl_abc123 \
+curl https://sandbox-merchants-api.nonprod.paygate.systems/blocklist/customers/blc_abc123 \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
@@ -141,7 +141,7 @@ curl "https://sandbox-merchants-api.nonprod.paygate.systems/whitelist/card?limit
 {
   "items": [
     {
-      "id": "wl_abc123",
+      "id": "cwl_abc123",
       "binCode": "411111",
       "last4": "1111",
       "createdAt": "2026-03-04T12:00:00Z",
@@ -157,7 +157,7 @@ The `cooldownExpiresAt` field indicates when the cooldown period expires for a r
 ### Get a Whitelisted Card Entry
 
 ```bash
-curl https://sandbox-merchants-api.nonprod.paygate.systems/whitelist/card/wl_abc123 \
+curl https://sandbox-merchants-api.nonprod.paygate.systems/whitelist/card/cwl_abc123 \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
