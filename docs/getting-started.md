@@ -8,6 +8,8 @@ The Platform Merchants API lets you accept card payments, process refunds, initi
 |-------------|------------------------------------------------------------|
 | Sandbox     | `https://sandbox-merchants-api.nonprod.paygate.systems`    |
 
+> **Warning — Sandbox Data Policy:** The sandbox environment is strictly for testing with **synthetic (fictitious) data only**. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **forbidden**. Always use the provided [test card numbers](card-payments.md#testing), fabricated names, addresses, and email addresses. Violating this policy may result in account suspension.
+
 ## Prerequisites
 
 Before you begin, make sure you have:

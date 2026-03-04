@@ -263,6 +263,8 @@ When `useRefunds` is `true`, the platform first applies any available refund bal
 
 ## Testing
 
+> **Warning:** Only **synthetic (fictitious) data** may be used in the sandbox environment. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **strictly forbidden**. Always use the test card numbers listed below along with fabricated customer details (names, emails, addresses).
+
 Use the following test card numbers in the **sandbox** environment to simulate different payment outcomes. All test cards can use any future expiry date and any 3-digit CVC.
 
 ### Visa — Approved
