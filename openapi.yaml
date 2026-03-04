@@ -331,34 +331,6 @@ paths:
       summary: Get payment or refund
       tags:
         - Payment
-  /payment/{id}/confirm:
-    post:
-      description: Confirms an existing payment by ID
-      operationId: confirm-payment
-      parameters:
-        - description: payment ID
-          in: path
-          name: id
-          required: true
-          schema:
-            description: payment ID
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaymentConfirmedResponse'
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ErrorModel'
-          description: Error
-      summary: Confirm payment
-      tags:
-        - Payment
   /payment/{id}/refund:
     post:
       description: Request payment refund
@@ -1243,16 +1215,6 @@ components:
         - name
         - expiry
         - cvc
-      type: object
-    PaymentConfirmedResponse:
-      additionalProperties: false
-      properties:
-        message:
-          description: Confirmation message
-          example: The payment has been successfully confirmed.
-          type: string
-      required:
-        - message
       type: object
     PaymentCreateData:
       additionalProperties: false
