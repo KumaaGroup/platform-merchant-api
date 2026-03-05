@@ -46,11 +46,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorModel'
           description: Error
-      summary: List customer blocklist records
+      summary: List customer blocklist entries
       tags:
         - Customer Blocklist
     post:
-      description: Blocks multiple customers by card data (BIN + last 4 digits) or email
+      description: Blocks multiple customers by card (BIN + last 4 digits) or email
       operationId: create-customer-blocklist
       requestBody:
         content:
