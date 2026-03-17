@@ -10,6 +10,33 @@ servers:
   - description: sandbox
     url: https://sandbox-merchants-api.nonprod.paygate.systems
 paths:
+  /any-merchant-webhook-endpoint-path:
+    post:
+      description: Presents the merchant webhook server endpoint
+      operationId: receive-webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/WebhookPayload'
+              description: Webhook payload
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Error
+      servers:
+        - description: merchant server
+          url: https://merchant-server
+      summary: Presents the merchant webhook server endpoint
+      tags:
+        - Merchant Webhook Server
   /blocklist/customers:
     get:
       description: Lists blocked customers with pagination
@@ -1668,6 +1695,38 @@ components:
       required:
         - name
         - value
+      type: object
+    WebhookPayload:
+      additionalProperties: false
+      properties:
+        actionUrl:
+          description: Action URL related to object status
+          type: string
+        eventType:
+          description: Event type
+          type: string
+        externalId:
+          description: External reference ID
+          type: string
+        objectId:
+          description: Object ID
+          type: string
+        responseCode:
+          description: Response code to clarify object status
+          type: string
+        status:
+          description: Object status
+          type: string
+        timestamp:
+          description: Event timestamp
+          format: date-time
+          type: string
+      required:
+        - objectId
+        - externalId
+        - eventType
+        - status
+        - timestamp
       type: object
     WebhookUpdateData:
       additionalProperties: false
