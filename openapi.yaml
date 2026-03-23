@@ -1704,18 +1704,38 @@ components:
           type: string
         eventType:
           description: Event type
+          enum:
+            - CARD_PAYMENT
+            - OPEN_BANKING
           type: string
         externalId:
           description: External reference ID
           type: string
         objectId:
           description: Object ID
+          example: pay_550e8400-e29b-41d4-a716-446655440000
           type: string
         responseCode:
           description: Response code to clarify object status
           type: string
         status:
           description: Object status
+          enum:
+            - AUTH_REQUESTED
+            - AUTHORIZED
+            - CAPTURED
+            - DECLINED
+            - TRANSFERRED
+            - REQUESTED
+            - PENDING_APPROVAL
+            - APPROVED
+            - REJECTED
+            - INVALID
+            - IN_TRANSIT
+            - FAILED
+            - CANCELLED
+            - PENDING
+            - COMPLETED
           type: string
         timestamp:
           description: Event timestamp
