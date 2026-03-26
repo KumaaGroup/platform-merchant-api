@@ -1394,6 +1394,11 @@ components:
           example: 12.34
           format: decimal
           type: number
+        amountRefunded:
+          description: Payment amount that was refunded or charged back
+          example: 12.34
+          format: decimal
+          type: number
         card:
           allOf:
             - $ref: '#/components/schemas/CardPayloadResponse'
