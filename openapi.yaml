@@ -1069,6 +1069,7 @@ components:
           example: 99.99
           format: decimal
           minimum: 0.01
+          multipleOf: 0.01
           type: number
         externalId:
           description: Merchant-provided external identifier for the transaction
@@ -1251,6 +1252,7 @@ components:
           example: 12.34
           format: decimal
           minimum: 0.01
+          multipleOf: 0.01
           type: number
         card:
           allOf:
@@ -1488,6 +1490,7 @@ components:
           example: 12.34
           format: decimal
           minimum: 0.01
+          multipleOf: 0.01
           type: number
         card:
           allOf:
@@ -1560,6 +1563,7 @@ components:
           example: 5
           format: decimal
           minimum: 0.01
+          multipleOf: 0.01
           type: number
         externalId:
           description: External reference ID
