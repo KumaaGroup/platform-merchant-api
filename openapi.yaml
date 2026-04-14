@@ -418,6 +418,30 @@ paths:
       summary: Create payments batch
       tags:
         - Payment
+  /payment/google-pay:
+    post:
+      description: Requests a new Google Pay payment
+      operationId: create-payment-google-pay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/PaymentGooglePayCreateData'
+              description: Google Pay payment creation data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentGooglePayCreatedResponse'
+          description: OK
+        "422":
+          description: Payment declined
+      summary: Create Google Pay payment
+      tags:
+        - Payment
   /payment/ptc:
     post:
       description: Requests a new push-to-card payment
@@ -1371,6 +1395,90 @@ components:
         - lastName
         - billingAddress
       type: object
+    PaymentGooglePayCreateData:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          minimum: 0.01
+          multipleOf: 0.01
+          type: number
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        customer:
+          allOf:
+            - $ref: '#/components/schemas/PaymentCustomer'
+          description: Customer information
+        customerIp:
+          description: Customer IP address
+          format: ipv4
+          type: string
+        externalId:
+          description: External reference ID
+          maxLength: 255
+          minLength: 1
+          pattern: ^[a-zA-Z0-9_-]+$
+          type: string
+        failureUrl:
+          description: Redirect URL on failed payment
+          format: uri
+          type: string
+        metadata:
+          description: Metadata
+          type: string
+        successUrl:
+          description: Redirect URL on successful payment
+          format: uri
+          type: string
+      required:
+        - customer
+        - currency
+        - amount
+        - externalId
+      type: object
+    PaymentGooglePayCreatedResponse:
+      additionalProperties: false
+      properties:
+        actionUrl:
+          description: URL for required action (e.g., 3DS authentication)
+          type: string
+        externalId:
+          description: External ID provided by merchant
+          type: string
+        id:
+          description: Google Pay payment ID
+          example: pay_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        message:
+          description: Decline reason if applicable
+          type: string
+        status:
+          description: Payment status
+          enum:
+            - AUTH_REQUESTED
+            - AUTHORIZED
+            - CAPTURED
+            - DECLINED
+            - TRANSFERRED
+            - REQUESTED
+            - PENDING
+            - PENDING_APPROVAL
+            - APPROVED
+            - REJECTED
+            - COMPLETED
+            - INVALID
+          example: AUTH_REQUESTED
+          type: string
+      required:
+        - id
+        - externalId
+        - status
+      type: object
     PaymentListResponse:
       additionalProperties: false
       properties:
@@ -1453,6 +1561,12 @@ components:
             - REJECTED
             - COMPLETED
             - INVALID
+          type: string
+        tokenProvider:
+          description: Token provider
+          enum:
+            - APPLE_PAY
+            - GOOGLE_PAY
           type: string
         type:
           description: Transaction type
