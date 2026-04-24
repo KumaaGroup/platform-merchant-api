@@ -837,6 +837,10 @@ components:
           description: Masked card number
           example: '************4242'
           type: string
+      required:
+        - number
+        - binCode
+        - last4
       type: object
     CardWhitelistCreateData:
       additionalProperties: false
@@ -1543,6 +1547,13 @@ components:
         parentPaymentId:
           description: Parent payment ID (available for REFUND, CHARGEBACK, PUSH-TO-CARD)
           type: string
+        paymentMethod:
+          description: Payment method
+          enum:
+            - CARD
+            - APPLE_PAY
+            - GOOGLE_PAY
+          type: string
         responseCode:
           description: Decline reason code if applicable
           type: string
@@ -1561,12 +1572,6 @@ components:
             - REJECTED
             - COMPLETED
             - INVALID
-          type: string
-        tokenProvider:
-          description: Token provider
-          enum:
-            - APPLE_PAY
-            - GOOGLE_PAY
           type: string
         type:
           description: Transaction type
@@ -1588,11 +1593,11 @@ components:
         - id
         - externalId
         - type
-        - card
         - currency
         - amount
         - customer
         - status
+        - paymentMethod
         - createdAt
         - updatedAt
       type: object
