@@ -37,9 +37,8 @@ sequenceDiagram
         I-->>API: Authorization approved
         API-->>M: Webhook: status=AUTHORIZED
     end
-    Note over API: Capture & settlement
+    Note over API: Capture
     API-->>M: Webhook: status=CAPTURED
-    API-->>M: Webhook: status=COMPLETED
 ```
 
 ## Create a Payment
@@ -143,39 +142,30 @@ Once you receive the `actionUrl`, redirect the customer to complete the 3DS chal
 
 ```mermaid
 stateDiagram-v2
-    [*] --> AUTH_REQUESTED
     [*] --> REQUESTED
+    REQUESTED --> AUTH_REQUESTED
+    REQUESTED --> AUTHORIZED
+    REQUESTED --> DECLINED
+    REQUESTED --> INVALID
     AUTH_REQUESTED --> AUTHORIZED
     AUTH_REQUESTED --> DECLINED
     AUTHORIZED --> CAPTURED
     AUTHORIZED --> DECLINED
-    CAPTURED --> COMPLETED
-    COMPLETED --> TRANSFERRED
-    REQUESTED --> PENDING
-    PENDING --> PENDING_APPROVAL
-    PENDING_APPROVAL --> APPROVED
-    PENDING_APPROVAL --> REJECTED
-    APPROVED --> COMPLETED
+    CAPTURED --> [*]
     DECLINED --> [*]
-    REJECTED --> [*]
-    TRANSFERRED --> [*]
     INVALID --> [*]
 ```
 
-| Status             | Description                                          |
-|--------------------|------------------------------------------------------|
-| `AUTH_REQUESTED`   | Payment submitted, awaiting authorization            |
-| `AUTHORIZED`       | Card authorized, funds reserved                      |
-| `CAPTURED`         | Funds captured from the card                         |
-| `COMPLETED`        | Payment fully processed                              |
-| `DECLINED`         | Payment was declined by the issuer                   |
-| `PENDING`          | Awaiting additional action                           |
-| `PENDING_APPROVAL` | Awaiting manual approval                             |
-| `APPROVED`         | Manually approved                                    |
-| `REJECTED`         | Manually rejected                                    |
-| `TRANSFERRED`      | Funds transferred to merchant                        |
-| `REQUESTED`        | Payment request submitted                            |
-| `INVALID`          | Payment data invalid                                 |
+> Refunds and chargebacks have their own lifecycles — see [Refunds](refunds.md).
+
+| Status           | Description                                              |
+|------------------|----------------------------------------------------------|
+| `REQUESTED`      | Payment request submitted                                |
+| `AUTH_REQUESTED` | Awaiting 3DS authentication                              |
+| `AUTHORIZED`     | Card authorized, funds reserved                          |
+| `CAPTURED`       | Funds captured from the card (terminal, success)         |
+| `DECLINED`       | Payment declined by the issuer or platform (terminal)    |
+| `INVALID`        | Payment data invalid (terminal)                          |
 
 ## Get Payment Details
 
