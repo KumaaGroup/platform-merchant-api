@@ -71,7 +71,7 @@ You can attach up to 5 custom headers to each webhook. These are included in eve
 
 | Event Type     | Triggered When                                          |
 |----------------|---------------------------------------------------------|
-| `CARD_PAYMENT` | A card payment status changes (authorized, captured, declined, refunded, etc.) |
+| `CARD_PAYMENT` | A card payment status changes (authorized, captured, declined, refunded, charged back, etc.) |
 | `OPEN_BANKING` | An open banking transaction status changes (in transit, completed, failed, etc.) |
 
 ## List Webhooks

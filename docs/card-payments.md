@@ -37,9 +37,8 @@ sequenceDiagram
         I-->>API: Authorization approved
         API-->>M: Webhook: status=AUTHORIZED
     end
-    Note over API: Capture & settlement
+    Note over API: Capture
     API-->>M: Webhook: status=CAPTURED
-    API-->>M: Webhook: status=COMPLETED
 ```
 
 ## Create a Payment
@@ -133,7 +132,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
 
 ## 3D Secure (3DS)
 
-When a payment is created, it starts in `REQUESTED` status and the payment workflow begins. If the platform determines that 3D Secure authentication is required, the payment status changes to `AUTH_REQUESTED`.
+When a payment is created, it starts in `REQUESTED` status and the payment workflow begins. If the platform determines that 3D Secure authentication is required, the payment status changes to `AUTH_REQUESTED`. `AUTH_REQUESTED` is set **only** to inform the merchant that the customer must complete a 3DS challenge — it never appears on payments that don't go through 3DS, and never on refunds, chargebacks, or push-to-card.
 
 The 3DS challenge URL (`actionUrl`) is delivered via a [webhook](webhooks.md) notification for `CARD_PAYMENT` events. It is also available by calling [GET /payment/{id}](#get-payment-details). The `actionUrl` is **never** included in the create payment response.
 
@@ -141,41 +140,29 @@ Once you receive the `actionUrl`, redirect the customer to complete the 3DS chal
 
 ## Payment Lifecycle
 
+This is the lifecycle of a single card payment created via `POST /payment`. Refunds, chargebacks, and push-to-card disbursements have their own lifecycles — see [Refunds](refunds.md) and [Push-to-Card Lifecycle](#push-to-card-lifecycle).
+
 ```mermaid
 stateDiagram-v2
-    [*] --> AUTH_REQUESTED
     [*] --> REQUESTED
-    AUTH_REQUESTED --> AUTHORIZED
-    AUTH_REQUESTED --> DECLINED
+    REQUESTED --> AUTH_REQUESTED: 3DS challenge required
+    REQUESTED --> AUTHORIZED: no 3DS, authorized
+    REQUESTED --> DECLINED: validation failed or no acquirer
+    AUTH_REQUESTED --> AUTHORIZED: 3DS approved
+    AUTH_REQUESTED --> DECLINED: 3DS failed / blocked / timed out
     AUTHORIZED --> CAPTURED
     AUTHORIZED --> DECLINED
-    CAPTURED --> COMPLETED
-    COMPLETED --> TRANSFERRED
-    REQUESTED --> PENDING
-    PENDING --> PENDING_APPROVAL
-    PENDING_APPROVAL --> APPROVED
-    PENDING_APPROVAL --> REJECTED
-    APPROVED --> COMPLETED
+    CAPTURED --> [*]
     DECLINED --> [*]
-    REJECTED --> [*]
-    TRANSFERRED --> [*]
-    INVALID --> [*]
 ```
 
-| Status             | Description                                          |
-|--------------------|------------------------------------------------------|
-| `AUTH_REQUESTED`   | Payment submitted, awaiting authorization            |
-| `AUTHORIZED`       | Card authorized, funds reserved                      |
-| `CAPTURED`         | Funds captured from the card                         |
-| `COMPLETED`        | Payment fully processed                              |
-| `DECLINED`         | Payment was declined by the issuer                   |
-| `PENDING`          | Awaiting additional action                           |
-| `PENDING_APPROVAL` | Awaiting manual approval                             |
-| `APPROVED`         | Manually approved                                    |
-| `REJECTED`         | Manually rejected                                    |
-| `TRANSFERRED`      | Funds transferred to merchant                        |
-| `REQUESTED`        | Payment request submitted                            |
-| `INVALID`          | Payment data invalid                                 |
+| Status           | Description                                                                  |
+|------------------|------------------------------------------------------------------------------|
+| `REQUESTED`      | Payment created and being processed                                          |
+| `AUTH_REQUESTED` | Customer must complete a 3DS challenge (set only when 3D Secure is required) |
+| `AUTHORIZED`     | Card authorized, funds reserved                                              |
+| `CAPTURED`       | Funds captured from the card (terminal, success)                             |
+| `DECLINED`       | Payment declined by the issuer or platform (terminal)                        |
 
 ## Get Payment Details
 
@@ -222,7 +209,7 @@ sequenceDiagram
     end
 ```
 
-Create up to 100 payments in a single atomic request. All payments succeed or none are created.
+Create up to 100 payments in a single atomic request. All payments succeed or none are created. Each payment in the batch follows the [single-payment lifecycle](#payment-lifecycle).
 
 ```bash
 curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/batch \
@@ -275,12 +262,15 @@ sequenceDiagram
         API->>API: Apply available refund balances (last 180 days)
         Note over API: Remaining amount pushed to card
     end
-    API->>C: Push funds
+    API->>API: Platform admin reviews disbursement
+    API->>C: Push funds (after approval)
     API-->>M: 200 status=REQUESTED
     API-->>M: Webhook: status updates
 ```
 
 Push funds directly to a customer's card. This is useful for disbursements, payouts, or refunds to a different card.
+
+> **Note:** Push-to-card disbursements always require platform-administration review before funds are sent. The payment stays in `REQUESTED` until the platform approves or rejects it.
 
 ```bash
 curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/ptc \
@@ -323,6 +313,30 @@ When `useRefunds` is `true`, the platform first applies any available refund bal
   "message": "Push-to-card payment initiated"
 }
 ```
+
+### Push-to-Card Lifecycle
+
+Push-to-card disbursements use a different state machine from card payments. They never go through 3D Secure, so `AUTH_REQUESTED`, `AUTHORIZED`, and `CAPTURED` do not apply.
+
+```mermaid
+stateDiagram-v2
+    [*] --> REQUESTED
+    REQUESTED --> APPROVED: platform approves
+    REQUESTED --> REJECTED: platform rejects
+    APPROVED --> COMPLETED: payout succeeded
+    APPROVED --> DECLINED: payout failed
+    COMPLETED --> [*]
+    DECLINED --> [*]
+    REJECTED --> [*]
+```
+
+| Status      | Description                                                  |
+|-------------|--------------------------------------------------------------|
+| `REQUESTED` | Disbursement created, awaiting platform-administration review |
+| `APPROVED`  | Approved by platform admin, sent to the payout processor     |
+| `REJECTED`  | Rejected by platform admin during review (terminal)          |
+| `COMPLETED` | Funds successfully pushed to the card (terminal, success)    |
+| `DECLINED`  | Payout failed at the processor (terminal)                    |
 
 ## Testing
 
