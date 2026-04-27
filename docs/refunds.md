@@ -85,24 +85,41 @@ The response includes a `parentPaymentId` field linking the refund back to the o
 
 ## Refund Lifecycle
 
-```
-REQUESTED → PENDING ──────────────→ APPROVED → COMPLETED
-          → PENDING_APPROVAL → APPROVED ↗   ↘ DECLINED
-          ↘ INVALID              ↘ REJECTED
+A refund follows its own state machine, separate from the [card-payment lifecycle](card-payments.md#payment-lifecycle). Statuses such as `AUTH_REQUESTED`, `AUTHORIZED`, and `CAPTURED` never appear on a refund.
+
+```mermaid
+stateDiagram-v2
+    [*] --> REQUESTED: validation passed
+    [*] --> DECLINED: validation failed at submission
+    REQUESTED --> PENDING: ratio < threshold (auto-approved)
+    REQUESTED --> PENDING_APPROVAL: ratio >= threshold or threshold = 0
+    REQUESTED --> APPROVED: platform-initiated (skip threshold)
+    PENDING --> APPROVED
+    PENDING_APPROVAL --> APPROVED: admin approves
+    PENDING_APPROVAL --> REJECTED: admin rejects
+    APPROVED --> COMPLETED
+    COMPLETED --> [*]
+    DECLINED --> [*]
+    REJECTED --> [*]
 ```
 
-| Status             | Description                                                                                     |
-|--------------------|-------------------------------------------------------------------------------------------------|
-| `REQUESTED`        | Refund submitted, initial validation in progress                                                |
-| `PENDING`          | Validation passed, refund auto-approved (within threshold)                                      |
-| `PENDING_APPROVAL` | Refund requires manual approval by platform administration (threshold exceeded or auto-approval disabled) |
-| `APPROVED`         | Refund approved, being sent to the payment processor                                            |
-| `COMPLETED`        | Refund successfully processed (terminal)                                                        |
-| `DECLINED`         | Refund declined by the payment processor (terminal)                                             |
-| `REJECTED`         | Refund rejected during manual review (terminal)                                                 |
-| `INVALID`          | Refund failed initial validation, e.g. duplicate `externalId` or invalid amount (terminal)      |
+| Status             | Description                                                                                  |
+|--------------------|----------------------------------------------------------------------------------------------|
+| `REQUESTED`        | Refund created and being evaluated against the merchant's refund-ratio threshold              |
+| `PENDING`          | Within the merchant's refund-ratio threshold — auto-approved and queued for processing        |
+| `PENDING_APPROVAL` | Above the threshold (or threshold disabled) — awaiting manual review by platform administration |
+| `APPROVED`         | Approved (auto or by admin), refund is being sent to the payment processor                    |
+| `COMPLETED`        | Refund successfully processed by the payment processor (terminal)                             |
+| `REJECTED`         | Refund rejected during manual review by platform administration (terminal)                    |
+| `DECLINED`         | Refund failed validation at submission, e.g. parent payment not found, refundable amount exceeded, or payment not refundable (terminal) |
 
-> **Note:** When querying refund status, a `PENDING_APPROVAL` state means the refund is waiting for the platform administration to review and approve it. No action is required from the merchant — the administration team will process the approval.
+> **Note on `PENDING_APPROVAL`:** No action is required from the merchant — the platform-administration team will process the approval.
+
+> **Note on platform-initiated refunds:** Refunds initiated directly by platform administration bypass the threshold evaluation and move straight from `REQUESTED` to `APPROVED`.
+
+### `INVALID` webhook signal
+
+Refunds may also produce a webhook with `status: INVALID`. Unlike the statuses above, `INVALID` is **never stored on a refund record** — it is a transient signal sent when a duplicate `externalId` is detected at submission and the refund row cannot be created. Use a unique `externalId` per refund to avoid this (see [Idempotency](idempotency.md)).
 
 ## Best Practices
 
