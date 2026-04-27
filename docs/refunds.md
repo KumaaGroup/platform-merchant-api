@@ -119,7 +119,28 @@ stateDiagram-v2
 
 ### `INVALID` webhook signal
 
-Refunds may also produce a webhook with `status: INVALID`. Unlike the statuses above, `INVALID` is **never stored on a refund record** — it is a transient signal sent when a duplicate `externalId` is detected at submission and the refund row cannot be created. Use a unique `externalId` per refund to avoid this (see [Idempotency](idempotency.md)).
+A refund submission may also produce a `CARD_PAYMENT` webhook with `status: INVALID`. Unlike every other status in this section, `INVALID` is **not a stored state** — it is a one-shot signal that the refund was rejected before any record could be created.
+
+It is sent today when a duplicate `externalId` is detected at submission time. The webhook payload identifies the rejected refund attempt:
+
+```json
+{
+  "eventType": "CARD_PAYMENT",
+  "objectId": "ref_def456",
+  "externalId": "refund-order-001",
+  "status": "INVALID",
+  "responseCode": "duplicate externalId conflicts with existing payment",
+  "timestamp": "2026-03-04T12:00:00Z"
+}
+```
+
+How merchants should handle it:
+
+- **`GET /payment/{objectId}`** for that `objectId` will return `404 Not Found` — no row exists.
+- **Retrying the same `externalId`** produces the same `INVALID` outcome (or a synchronous `409 Conflict` if you retry over HTTP). To actually create the refund, submit it with a fresh `externalId`.
+- **Treat `INVALID` as terminal for that submission attempt.** No further webhook will arrive for the same `objectId`.
+
+See [Idempotency](idempotency.md) for guidance on choosing `externalId` values.
 
 ## Best Practices
 
