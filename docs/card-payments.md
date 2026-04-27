@@ -30,7 +30,7 @@ sequenceDiagram
             API-->>M: Webhook: status=AUTHORIZED
         else 3DS failed
             I-->>API: 3DS failure
-            API-->>M: Webhook: status=DECLINED
+            API-->>M: Webhook: status=DECLINED, responseCode=THREE_DS_FAILED or THREE_DS_EXPIRED
         end
         I-->>C: Redirect to successUrl / failureUrl
     else No 3DS
@@ -138,6 +138,17 @@ The 3DS challenge URL (`actionUrl`) is delivered via a [webhook](webhooks.md) no
 
 Once you receive the `actionUrl`, redirect the customer to complete the 3DS challenge. After authentication, the customer is redirected to your `successUrl` or `failureUrl`, and the payment status updates accordingly via webhook.
 
+### 3DS failure outcomes
+
+There is no dedicated payment status for 3DS failure or 3DS expiry. When a 3DS challenge does not succeed, the payment transitions to `DECLINED` and the `responseCode` field on the payment carries the specific reason. Two `responseCode` values are 3DS-specific:
+
+| `responseCode`     | When it is set                                                                                       |
+|--------------------|------------------------------------------------------------------------------------------------------|
+| `THREE_DS_FAILED`  | The 3DS challenge failed — authentication was unsuccessful, the issuer rejected the challenge, or the customer was blocked. |
+| `THREE_DS_EXPIRED` | The 3DS challenge timed out — the customer did not complete authentication within the allowed time.    |
+
+Both values arrive together with `status: DECLINED`, on the same `CARD_PAYMENT` webhook that signals the decline (and on `GET /payment/{id}`). To recognise a 3DS-related decline programmatically, check `status == DECLINED` **and** `responseCode in {THREE_DS_FAILED, THREE_DS_EXPIRED}`. The customer can usually retry by submitting a new payment.
+
 ## Payment Lifecycle
 
 This is the lifecycle of a single card payment created via `POST /payment`. Refunds, chargebacks, and push-to-card disbursements have their own lifecycles — see [Refunds](refunds.md) and [Push-to-Card Lifecycle](#push-to-card-lifecycle).
@@ -162,7 +173,7 @@ stateDiagram-v2
 | `AUTH_REQUESTED` | Customer must complete a 3DS challenge (set only when 3D Secure is required) |
 | `AUTHORIZED`     | Card authorized, funds reserved                                              |
 | `CAPTURED`       | Funds captured from the card (terminal, success)                             |
-| `DECLINED`       | Payment declined by the issuer or platform (terminal)                        |
+| `DECLINED`       | Payment declined by the issuer or platform (terminal). For 3DS-specific declines, inspect `responseCode` (see [3DS failure outcomes](#3ds-failure-outcomes)). |
 
 ## Get Payment Details
 
