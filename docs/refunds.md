@@ -121,7 +121,7 @@ stateDiagram-v2
 
 A refund submission may also produce a `CARD_PAYMENT` webhook with `status: INVALID`. Unlike every other status in this section, `INVALID` is **not a stored state** — it is a one-shot signal that the refund was rejected before any record could be created.
 
-It is sent today when a duplicate `externalId` is detected at submission time. The webhook payload identifies the rejected refund attempt:
+It is sent when a duplicate `externalId` is detected at submission time. The webhook payload identifies the rejected refund attempt:
 
 ```json
 {
@@ -137,7 +137,7 @@ It is sent today when a duplicate `externalId` is detected at submission time. T
 How merchants should handle it:
 
 - **`GET /payment/{objectId}`** for that `objectId` will return `404 Not Found` — no row exists.
-- **Retrying the same `externalId`** produces the same `INVALID` outcome (or a synchronous `409 Conflict` if you retry over HTTP). To actually create the refund, submit it with a fresh `externalId`.
+- **Retrying the same `externalId`** produces the same `INVALID` outcome (or a synchronous `409 Conflict` if you retry over HTTP). This means a refund request with this externalId has already been accepted. In case this is a legitimate second refund request, submit it with a fresh `externalId`.
 - **Treat `INVALID` as terminal for that submission attempt.** No further webhook will arrive for the same `objectId`.
 
 See [Idempotency](idempotency.md) for guidance on choosing `externalId` values.
