@@ -1089,6 +1089,15 @@ components:
           format: uri
           type: string
       type: object
+    GooglePayCallbackData:
+      additionalProperties: false
+      properties:
+        paymentToken:
+          description: Stringified Google Pay paymentMethodData
+          type: string
+      required:
+        - paymentToken
+      type: object
     OpenBankingTransactionCreateData:
       additionalProperties: false
       properties:
