@@ -1353,6 +1353,7 @@ components:
           enum:
             - AUTH_REQUESTED
             - AUTHORIZED
+            - TOKEN_REQUESTED
             - CAPTURED
             - DECLINED
             - REQUESTED
@@ -1474,6 +1475,7 @@ components:
           enum:
             - AUTH_REQUESTED
             - AUTHORIZED
+            - TOKEN_REQUESTED
             - CAPTURED
             - DECLINED
             - REQUESTED
@@ -1569,6 +1571,7 @@ components:
           enum:
             - AUTH_REQUESTED
             - AUTHORIZED
+            - TOKEN_REQUESTED
             - CAPTURED
             - DECLINED
             - REQUESTED
@@ -1663,6 +1666,7 @@ components:
           enum:
             - AUTH_REQUESTED
             - AUTHORIZED
+            - TOKEN_REQUESTED
             - CAPTURED
             - DECLINED
             - REQUESTED
@@ -1724,6 +1728,7 @@ components:
           enum:
             - AUTH_REQUESTED
             - AUTHORIZED
+            - TOKEN_REQUESTED
             - CAPTURED
             - DECLINED
             - REQUESTED
@@ -1855,6 +1860,7 @@ components:
           enum:
             - AUTH_REQUESTED
             - AUTHORIZED
+            - TOKEN_REQUESTED
             - CAPTURED
             - DECLINED
             - REQUESTED
