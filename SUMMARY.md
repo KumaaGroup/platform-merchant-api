@@ -7,6 +7,7 @@
   * [Webhooks](docs/webhooks.md)
   * [Error Handling](docs/error-handling.md)
   * [Card Payments](docs/card-payments.md)
+  * [Google Pay](docs/google-pay.md)
   * [Refunds](docs/refunds.md)
   * [Blocklist and Whitelist](docs/blocklist-and-whitelist.md)
   * [Open Banking](docs/open-banking.md)
