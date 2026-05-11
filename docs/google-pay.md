@@ -15,6 +15,9 @@ sequenceDiagram
     M->>API: POST /payment/google-pay (amount, customer, urls)
     API-->>M: 200 status=TOKEN_REQUESTED, actionUrl
     M->>Page: Embed actionUrl on checkout
+    C->>Page: Load button page
+    Note over Page: Geoip check (same as 3DS).<br/>Redirect to blocked page if unsupported.
+    Page-->>C: Render Google Pay button
     C->>Page: Tap Google Pay button
     Page->>GP: Open Google Pay sheet
     C->>GP: Authorize with saved payment method
@@ -26,11 +29,15 @@ sequenceDiagram
         M->>C: Redirect to 3DS actionUrl
         C->>API: Complete 3DS challenge
     end
-    API-->>M: Webhook: status=AUTHORIZED
     API-->>M: Webhook: status=CAPTURED
 ```
 
-From the moment the callback is received, a Google Pay payment behaves exactly like a regular [card payment](card-payments.md) — same lifecycle, same webhooks, same 3DS handling. The only Google Pay–specific stages are the `TOKEN_REQUESTED` window during which the customer interacts with the hosted button page, and the decline `responseCode`s for window expiry and blocked locations.
+Two checks run inside the `TOKEN_REQUESTED` window before a Google Pay payment ever reaches the standard card flow:
+
+- **Location check.** When the customer loads the button page, we run a geoip check on their IP — the same approach used for [3DS challenges](card-payments.md#3d-secure-3ds), just performed earlier in the lifecycle. If their location is unsupported, the page redirects to a blocked-location page and the payment is declined with `RESTRICTED_COUNTRY` — the Google Pay button is never shown.
+- **Authorization window.** If the customer doesn't complete the Google Pay sheet within the allowed time, the payment is declined with `GOOGLE_PAY_EXPIRED`.
+
+Once the platform receives the callback from the hosted page, the payment behaves exactly like a regular [card payment](card-payments.md) — same lifecycle, same webhooks, same 3DS handling.
 
 ## Create a Google Pay Payment
 
@@ -99,7 +106,9 @@ The `actionUrl` returned by the create call points to a self-contained, statical
 </iframe>
 ```
 
-You do **not** need to include the Google Pay JS SDK, set up a merchant ID with Google, or implement the `onPaymentAuthorized` handler — the hosted page does all of that. You only need to render the iframe and wait for webhook updates on the payment.
+> **Important — `allow="payment"` is mandatory.** Browsers gate the Payment Request API (which Google Pay is built on top of) behind the `payment` Permissions-Policy feature. In a cross-origin iframe like this one, the feature is **disabled by default**: without `allow="payment"` on the `<iframe>` tag, the Google Pay sheet will silently fail to open when the customer taps the button, and your checkout will appear broken with no visible error. Treat this attribute as part of the integration, not a styling choice.
+
+You do **not** need to include the Google Pay JS SDK, set up a merchant ID with Google, or implement the `onPaymentAuthorized` handler — the hosted page does all of that. You only need to render the iframe (with `allow="payment"`) and wait for webhook updates on the payment.
 
 > **Note:** The `actionUrl` is single-use and bound to the payment ID. It expires when the payment leaves the `TOKEN_REQUESTED` state (after the customer pays, after the timeout window, or once we determine the customer's location is unsupported).
 
@@ -139,7 +148,7 @@ When a payment is declined while still in `TOKEN_REQUESTED`, the `responseCode` 
 | `responseCode`        | When it is set                                                                  |
 |-----------------------|---------------------------------------------------------------------------------|
 | `GOOGLE_PAY_EXPIRED`  | The customer did not complete the Google Pay sheet within the allowed window.   |
-| `RESTRICTED_COUNTRY`  | The customer's detected location is not supported for Google Pay.               |
+| `RESTRICTED_COUNTRY`  | The customer's detected location is not supported for Google Pay (checked at button-page load, before the Google Pay sheet is shown). |
 | `INTERNAL_ERROR`      | The platform could not recover a usable payment method from the Google Pay sheet. |
 
 In all three cases, the payment transitions directly from `TOKEN_REQUESTED` to `DECLINED`, a `CARD_PAYMENT` webhook is fired, and no card-side processing happens. The customer can retry by creating a new payment.
@@ -148,9 +157,13 @@ Declines that occur **after** the customer has authorized (validation failures, 
 
 ## Webhooks
 
-Google Pay payments emit the standard `CARD_PAYMENT` webhook events. There is no separate event type. See [Webhooks](webhooks.md) for setup instructions.
+Google Pay payments emit the standard `CARD_PAYMENT` webhook events — there is no separate event type, and the rules are identical to regular [card payments](card-payments.md). Webhooks fire on the key actionable transitions only:
 
-You will receive webhooks at every status transition — `TOKEN_REQUESTED → REQUESTED`, optional `AUTH_REQUESTED`, `AUTHORIZED`, `CAPTURED`, or `DECLINED`. As with card payments, the `actionUrl` for the 3DS challenge (when applicable) is delivered on the `AUTH_REQUESTED` webhook, never on the create response.
+- `AUTH_REQUESTED` — when a 3DS challenge is required (carries the `actionUrl` to redirect the customer to).
+- `CAPTURED` — terminal, success.
+- `DECLINED` — terminal, failure. Inspect `responseCode` for the reason.
+
+Intermediate transitions such as `TOKEN_REQUESTED → REQUESTED` (when the customer authorizes on the Google Pay sheet) and `REQUESTED → AUTHORIZED` (when the issuer approves without 3DS) do **not** emit their own webhook. If you need to observe them, poll `GET /payment/{id}`. See [Webhooks](webhooks.md) for setup instructions.
 
 ## Get Payment Details
 
@@ -168,7 +181,7 @@ To test Google Pay in the **sandbox** environment:
 1. Use a Google account that is enrolled in the [Google Pay TEST environment](https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist) and has a test card saved in its Google Wallet.
 2. Open the `actionUrl` iframe in a Chrome browser on a device that supports Google Pay.
 3. Tap the Google Pay button and complete the sheet.
-4. Observe the payment transition through `TOKEN_REQUESTED → REQUESTED → ... → CAPTURED` via webhook or by polling `GET /payment/{id}`.
+4. Observe the payment transition through `TOKEN_REQUESTED → REQUESTED → ... → CAPTURED` via the `CAPTURED` webhook, or by polling `GET /payment/{id}`.
 
 > **Warning:** Only **synthetic (fictitious) data** may be used in the sandbox environment. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **strictly forbidden**.
 
@@ -177,5 +190,5 @@ To test Google Pay in the **sandbox** environment:
 | To simulate…                  | Do this                                                                                  |
 |-------------------------------|------------------------------------------------------------------------------------------|
 | `GOOGLE_PAY_EXPIRED`          | Create a payment and do not interact with the button page; wait for the window to elapse |
-| `RESTRICTED_COUNTRY`          | Open the `actionUrl` from an IP in an unsupported region (the page redirects to the blocked-location page automatically) |
+| `RESTRICTED_COUNTRY`          | Open the `actionUrl` from an IP in an unsupported region — the page short-circuits at load time and redirects to the blocked-location page before the Google Pay button is rendered |
 | 3DS challenge / failure / issuer declines | Use one of the test cards listed in [Card Payments → Testing](card-payments.md#testing) as the payment method saved in your Google Wallet |
