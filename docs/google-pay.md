@@ -1,6 +1,6 @@
 # Google Pay
 
-Accept payments through Google Pay without ever handling card data yourself. You initiate the payment server-side; we return a hosted button page that you embed on your checkout. The customer taps the Google Pay button, completes the sheet, and we take the resulting payment token through the standard card-payment workflow (including 3D Secure when required).
+Accept payments through Google Pay without ever handling card data yourself. You initiate the payment server-side and we return a hosted button page, which you then embed on your checkout. A customer with a valid payment method in their Google Wallet taps the Google Pay button, completes the sheet, and the platform takes over — the rest follows the standard card-payment workflow, including 3D Secure when required.
 
 ## Integration Flow
 
@@ -17,9 +17,9 @@ sequenceDiagram
     M->>Page: Embed actionUrl on checkout
     C->>Page: Tap Google Pay button
     Page->>GP: Open Google Pay sheet
-    C->>GP: Authorize
-    GP-->>Page: paymentMethodData (token)
-    Page->>API: POST callback (token)
+    C->>GP: Authorize with saved payment method
+    GP-->>Page: paymentMethodData
+    Page->>API: POST callback
     Note over API: Resume payment workflow<br/>(same as card payments)
     alt 3DS required
         API-->>M: Webhook: status=AUTH_REQUESTED (actionUrl)
@@ -59,25 +59,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/googl
   }'
 ```
 
-Notice the request body has **no `card` object** — that's the whole point. Card data never touches your server. Everything else (customer, billing address, currency, amount, `externalId`, redirect URLs, metadata) follows the same shape as a regular [card payment](card-payments.md#create-a-payment).
-
-### Request Fields
-
-| Field                     | Type    | Required | Description                                              |
-|---------------------------|---------|----------|----------------------------------------------------------|
-| `externalId`              | string  | Yes      | Your unique identifier ([details](idempotency.md))       |
-| `currency`                | string  | Yes      | ISO 4217 currency code (e.g. `EUR`, `USD`)               |
-| `amount`                  | number  | Yes      | Amount to charge (minimum `0.01`)                        |
-| `customer.email`          | string  | Yes      | Customer email address                                   |
-| `customer.firstName`      | string  | Yes      | Customer first name                                      |
-| `customer.lastName`       | string  | Yes      | Customer last name                                       |
-| `customer.billingAddress` | object  | Yes      | Billing address (see [Card Payments](card-payments.md#billing-address)) |
-| `customer.phone`          | string  | No       | Phone in E.164 format                                    |
-| `customer.ssn`            | string  | No       | Social security number                                   |
-| `customerIp`              | string  | No       | Customer's IP address                                    |
-| `successUrl`              | string  | No       | Redirect URL after successful 3DS authentication         |
-| `failureUrl`              | string  | No       | Redirect URL after failed 3DS authentication             |
-| `metadata`                | object  | No       | Key-value pairs for your own reference                   |
+Notice the request body has **no `card` object** — that's the whole point. Card data never touches your server. Everything else (customer, billing address, currency, amount, `externalId`, redirect URLs, metadata) follows the same shape as a regular [card payment](card-payments.md#create-a-payment). See the API reference for the full field list.
 
 ### Response
 
@@ -104,7 +86,7 @@ The `actionUrl` returned by the create call points to a self-contained, statical
 1. Loads the Google Pay JS library
 2. Renders the official Google Pay button
 3. Opens the Google Pay payment sheet when the customer taps it
-4. POSTs the resulting payment token back to the platform once the customer authorizes
+4. Hands the customer's authorization back to the platform, which then resumes the payment
 
 **Embed it as an iframe on your checkout page:**
 
@@ -128,7 +110,7 @@ A Google Pay payment starts in `TOKEN_REQUESTED` and transitions into the regula
 ```mermaid
 stateDiagram-v2
     [*] --> TOKEN_REQUESTED
-    TOKEN_REQUESTED --> REQUESTED: customer authorized, token received
+    TOKEN_REQUESTED --> REQUESTED: customer authorized
     TOKEN_REQUESTED --> DECLINED: timeout / blocked location
     REQUESTED --> AUTH_REQUESTED: 3DS challenge required
     REQUESTED --> AUTHORIZED: no 3DS, authorized
@@ -144,7 +126,7 @@ stateDiagram-v2
 | Status            | Description                                                                                |
 |-------------------|--------------------------------------------------------------------------------------------|
 | `TOKEN_REQUESTED` | Hosted button page is live; the platform is waiting for the customer to authorize Google Pay |
-| `REQUESTED`       | Token received; standard card-payment processing has begun                                 |
+| `REQUESTED`       | Customer authorized; standard card-payment processing has begun                            |
 | `AUTH_REQUESTED`  | Customer must complete a 3DS challenge (see [3D Secure](card-payments.md#3d-secure-3ds))    |
 | `AUTHORIZED`      | Card authorized, funds reserved                                                            |
 | `CAPTURED`        | Funds captured (terminal, success)                                                         |
@@ -158,11 +140,11 @@ When a payment is declined while still in `TOKEN_REQUESTED`, the `responseCode` 
 |-----------------------|---------------------------------------------------------------------------------|
 | `GOOGLE_PAY_EXPIRED`  | The customer did not complete the Google Pay sheet within the allowed window.   |
 | `RESTRICTED_COUNTRY`  | The customer's detected location is not supported for Google Pay.               |
-| `INTERNAL_ERROR`      | The platform received an empty or malformed payment token from Google Pay.       |
+| `INTERNAL_ERROR`      | The platform could not recover a usable payment method from the Google Pay sheet. |
 
 In all three cases, the payment transitions directly from `TOKEN_REQUESTED` to `DECLINED`, a `CARD_PAYMENT` webhook is fired, and no card-side processing happens. The customer can retry by creating a new payment.
 
-Declines that occur **after** the token has been received (validation failures, 3DS failures, issuer declines, etc.) follow exactly the same conventions as regular [card payments](card-payments.md#payment-lifecycle).
+Declines that occur **after** the customer has authorized (validation failures, 3DS failures, issuer declines, etc.) follow exactly the same conventions as regular [card payments](card-payments.md#payment-lifecycle).
 
 ## Webhooks
 
@@ -177,15 +159,15 @@ curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_abc123 \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-Google Pay payments are returned by the same [`GET /payment/{id}`](card-payments.md#get-payment-details) endpoint as card payments. Once the customer authorizes, the response includes the masked card details (`binCode`, `last4`, `issuer`) of the network token that Google Pay returned.
+Google Pay payments are returned by the same [`GET /payment/{id}`](card-payments.md#get-payment-details) endpoint as card payments. Once the customer authorizes, the response includes the masked card details (`binCode`, `last4`, `issuer`) of the underlying payment method that Google Pay returned.
 
 ## Testing
 
 To test Google Pay in the **sandbox** environment:
 
-1. Use a Google account that is enrolled in the [Google Pay TEST environment](https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist) and has a test card saved.
+1. Use a Google account that is enrolled in the [Google Pay TEST environment](https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist) and has a test card saved in its Google Wallet.
 2. Open the `actionUrl` iframe in a Chrome browser on a device that supports Google Pay.
-3. Tap the Google Pay button and complete the sheet with a test card.
+3. Tap the Google Pay button and complete the sheet.
 4. Observe the payment transition through `TOKEN_REQUESTED → REQUESTED → ... → CAPTURED` via webhook or by polling `GET /payment/{id}`.
 
 > **Warning:** Only **synthetic (fictitious) data** may be used in the sandbox environment. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **strictly forbidden**.
@@ -196,4 +178,4 @@ To test Google Pay in the **sandbox** environment:
 |-------------------------------|------------------------------------------------------------------------------------------|
 | `GOOGLE_PAY_EXPIRED`          | Create a payment and do not interact with the button page; wait for the window to elapse |
 | `RESTRICTED_COUNTRY`          | Open the `actionUrl` from an IP in an unsupported region (the page redirects to the blocked-location page automatically) |
-| 3DS challenge / failure / issuer declines | Use one of the test cards listed in [Card Payments → Testing](card-payments.md#testing) inside your Google Pay test wallet |
+| 3DS challenge / failure / issuer declines | Use one of the test cards listed in [Card Payments → Testing](card-payments.md#testing) as the payment method saved in your Google Wallet |
