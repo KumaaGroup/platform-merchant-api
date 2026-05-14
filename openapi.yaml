@@ -392,6 +392,30 @@ paths:
       summary: Create refund
       tags:
         - Payment
+  /payment/apple-pay:
+    post:
+      description: Requests a new Apple Pay payment
+      operationId: create-payment-apple-pay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/PaymentTokenPaymentCreateData'
+              description: Token payment creation data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTokenPaymentCreatedResponse'
+          description: OK
+        "422":
+          description: Payment declined
+      summary: Create Apple Pay payment
+      tags:
+        - Payment
   /payment/batch:
     post:
       description: Creates multiple payments atomically. All payments succeed or none are created. Maximum 100 payments per batch.
@@ -427,15 +451,15 @@ paths:
           application/json:
             schema:
               allOf:
-                - $ref: '#/components/schemas/PaymentGooglePayCreateData'
-              description: Google Pay payment creation data
+                - $ref: '#/components/schemas/PaymentTokenPaymentCreateData'
+              description: Token payment creation data
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentGooglePayCreatedResponse'
+                $ref: '#/components/schemas/PaymentTokenPaymentCreatedResponse'
           description: OK
         "422":
           description: Payment declined
@@ -1089,15 +1113,6 @@ components:
           format: uri
           type: string
       type: object
-    GooglePayCallbackData:
-      additionalProperties: false
-      properties:
-        paymentToken:
-          description: Stringified Google Pay paymentMethodData
-          type: string
-      required:
-        - paymentToken
-      type: object
     OpenBankingTransactionCreateData:
       additionalProperties: false
       properties:
@@ -1408,90 +1423,6 @@ components:
         - lastName
         - billingAddress
       type: object
-    PaymentGooglePayCreateData:
-      additionalProperties: false
-      properties:
-        amount:
-          description: Payment amount
-          example: 12.34
-          format: decimal
-          minimum: 0.01
-          multipleOf: 0.01
-          type: number
-        currency:
-          description: ISO4217 currency code
-          example: USD
-          pattern: ^[A-Z]{3}$
-          type: string
-        customer:
-          allOf:
-            - $ref: '#/components/schemas/PaymentCustomer'
-          description: Customer information
-        customerIp:
-          description: Customer IP address
-          format: ipv4
-          type: string
-        externalId:
-          description: External reference ID
-          maxLength: 255
-          minLength: 1
-          pattern: ^[a-zA-Z0-9_-]+$
-          type: string
-        failureUrl:
-          description: Redirect URL on failed payment
-          format: uri
-          type: string
-        metadata:
-          description: Metadata
-          type: string
-        successUrl:
-          description: Redirect URL on successful payment
-          format: uri
-          type: string
-      required:
-        - customer
-        - currency
-        - amount
-        - externalId
-      type: object
-    PaymentGooglePayCreatedResponse:
-      additionalProperties: false
-      properties:
-        actionUrl:
-          description: URL for required action (e.g., 3DS authentication)
-          type: string
-        externalId:
-          description: External ID provided by merchant
-          type: string
-        id:
-          description: Google Pay payment ID
-          example: pay_550e8400-e29b-41d4-a716-446655440000
-          type: string
-        message:
-          description: Decline reason if applicable
-          type: string
-        status:
-          description: Payment status
-          enum:
-            - AUTH_REQUESTED
-            - AUTHORIZED
-            - TOKEN_REQUESTED
-            - CAPTURED
-            - DECLINED
-            - REQUESTED
-            - PENDING
-            - PENDING_APPROVAL
-            - APPROVED
-            - REJECTED
-            - COMPLETED
-            - INVALID
-          example: AUTH_REQUESTED
-          type: string
-      required:
-        - id
-        - externalId
-        - status
-      type: object
     PaymentListResponse:
       additionalProperties: false
       properties:
@@ -1683,6 +1614,90 @@ components:
         - externalId
         - status
       type: object
+    PaymentTokenPaymentCreateData:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          minimum: 0.01
+          multipleOf: 0.01
+          type: number
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        customer:
+          allOf:
+            - $ref: '#/components/schemas/PaymentCustomer'
+          description: Customer information
+        customerIp:
+          description: Customer IP address
+          format: ipv4
+          type: string
+        externalId:
+          description: External reference ID
+          maxLength: 255
+          minLength: 1
+          pattern: ^[a-zA-Z0-9_-]+$
+          type: string
+        failureUrl:
+          description: Redirect URL on failed payment
+          format: uri
+          type: string
+        metadata:
+          description: Metadata
+          type: string
+        successUrl:
+          description: Redirect URL on successful payment
+          format: uri
+          type: string
+      required:
+        - customer
+        - currency
+        - amount
+        - externalId
+      type: object
+    PaymentTokenPaymentCreatedResponse:
+      additionalProperties: false
+      properties:
+        actionUrl:
+          description: URL of the wallet pay button page
+          type: string
+        externalId:
+          description: External ID provided by merchant
+          type: string
+        id:
+          description: Payment ID
+          example: pay_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        message:
+          description: Decline reason if applicable
+          type: string
+        status:
+          description: Payment status
+          enum:
+            - AUTH_REQUESTED
+            - AUTHORIZED
+            - TOKEN_REQUESTED
+            - CAPTURED
+            - DECLINED
+            - REQUESTED
+            - PENDING
+            - PENDING_APPROVAL
+            - APPROVED
+            - REJECTED
+            - COMPLETED
+            - INVALID
+          example: TOKEN_REQUESTED
+          type: string
+      required:
+        - id
+        - externalId
+        - status
+      type: object
     RefundCreateData:
       additionalProperties: false
       properties:
@@ -1746,6 +1761,15 @@ components:
         - amount
         - createdAt
         - status
+      type: object
+    TokenPaymentCallbackData:
+      additionalProperties: false
+      properties:
+        paymentToken:
+          description: Stringified wallet payment token
+          type: string
+      required:
+        - paymentToken
       type: object
     Webhook:
       additionalProperties: false
