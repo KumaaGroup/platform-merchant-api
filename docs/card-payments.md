@@ -351,97 +351,113 @@ stateDiagram-v2
 
 ## Testing
 
-> **Warning:** Only **synthetic (fictitious) data** may be used in the sandbox environment. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **strictly forbidden**. Always use the test card numbers listed below along with fabricated customer details (names, emails, addresses).
+> **Warning:** Only **synthetic (fictitious) data** may be used in the sandbox environment. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **strictly forbidden**.
 
-Use the following test card numbers in the **sandbox** environment to simulate different payment outcomes. All test cards can use any future expiry date and any 3-digit CVC.
+Use the following test card numbers in the **sandbox** environment to simulate different payment outcomes. Each test card requires the **exact card number, expiry date, and cardholder name** shown in the table — the platform validates all three fields. Any other combination returns `400 Bad Request` with `"card is not valid for test payments"`.
+
+The CVC field accepts any valid 3-digit value.
 
 ### Visa — Approved
 
-| Card Number          | Outcome            |
-|----------------------|--------------------|
-| `4761344136141390`   | Approved           |
-| `4761201381475297`   | Approved           |
-| `4159129252458086`   | Approved           |
-| `4123407439043051`   | Approved           |
-| `4001888687412469`   | Approved           |
-| `4444493318246892`   | Approved           |
-| `4000287447386587`   | Approved (debit)   |
+| Card Number          | Expiry    | Cardholder        | Notes                 |
+|----------------------|-----------|-------------------|-----------------------|
+| `4000000000002701`   | `12/2032` | `Jane Smith`      | Visa                  |
+| `4000000000004970`   | `12/2032` | `Jane Smith`      | Cartes Bancaires Visa |
+| `4244951901005043`   | `08/2034` | `Sophia Turner`   |                       |
+| `4263704637473241`   | `10/2035` | `Noah Whitaker`   |                       |
+| `4761344136141390`   | `12/2027` | `Jane Smith`      | Debit (SG)            |
+| `4761261512059089`   | `12/2027` | `Jane Smith`      | Debit (CA)            |
+| `4159129252458086`   | `12/2027` | `Jane Smith`      | Credit (SV)           |
+| `4001888687412469`   | `12/2027` | `Jane Smith`      | Credit (DE)           |
+| `4001887232273343`   | `12/2027` | `Jane Smith`      | Credit (DE)           |
+| `4444493318246892`   | `12/2027` | `Jane Smith`      | Credit (MX)           |
+| `4815163523263534`   | `12/2027` | `Jane Smith`      | Debit (MX)            |
+| `4000287447386587`   | `12/2027` | `Jane Smith`      | Debit (US)            |
+| `4149124711257917`   | `12/2027` | `Jane Smith`      |                       |
+| `4462030000000000`   | `01/2035` | `John Smith`      |                       |
+| `4111111111111111`   | `01/2035` | `Jane Smith`      |                       |
 
 ### Visa — Declined
 
-| Card Number          | Reason                          |
-|----------------------|---------------------------------|
-| `4008370896662369`   | General decline                 |
-| `4008384424370890`   | Insufficient funds              |
-| `4000157454627969`   | Lost/stolen card                |
-| `4000247422310226`   | Expired card                    |
-| `4000254588011960`   | Transaction not permitted       |
-| `4000203016321921`   | Invalid transaction             |
-| `4000189336416410`   | Exceeds withdrawal limit        |
-| `4000196948974975`   | Exceeds withdrawal frequency    |
-| `4000273652260030`   | Restricted card                 |
-| `4000229544877670`   | Issuer/switch inoperative       |
-| `4000234977370839`   | Timeout                         |
-| `4000128449498204`   | External processing error       |
-| `4000212384978055`   | Format error                    |
-
-### Visa — 3D Secure
-
-| Card Number          | Outcome                                  |
-|----------------------|------------------------------------------|
-| `4000020951595032`   | 3DS approved (frictionless)              |
-| `4000027891380961`   | 3DS approved (with fingerprinting)       |
-| `4000319872807223`   | 3DS declined                             |
-| `4567491000001113`   | Frictionless flow (use amount `83.10`)   |
-| `4567491000002228`   | Challenge flow (use amount `115.20`)     |
+| Card Number          | Expiry    | Cardholder   | Reason             |
+|----------------------|-----------|--------------|--------------------|
+| `4000000000002701`   | `12/2028` | `REFUSED`    | General decline    |
+| `4000000000004970`   | `12/2028` | `REFUSED`    | General decline    |
+| `4008370896662369`   | `12/2027` | `Jane Smith` | General decline    |
+| `4111111111111105`   | `01/2035` | `Jane Smith` | Do not honor       |
+| `4111111111111143`   | `01/2035` | `Jane Smith` | Stolen card        |
+| `4111111111111151`   | `01/2035` | `Jane Smith` | Insufficient funds |
 
 ### Mastercard — Approved
 
-| Card Number          | Outcome            |
-|----------------------|--------------------|
-| `5101081046006034`   | Approved           |
-| `5101084411423750`   | Approved           |
-| `5333304500657872`   | Approved           |
-| `5333308664112277`   | Approved           |
-| `5550345228382224`   | Approved           |
-| `5550347471347813`   | Approved           |
-| `2222755234426838`   | Approved           |
-| `2221004483162815`   | Approved           |
+| Card Number          | Expiry    | Cardholder        | Notes       |
+|----------------------|-----------|-------------------|-------------|
+| `5200000000002235`   | `11/2033` | `John Smith`      |             |
+| `5221744250525131`   | `07/2036` | `Charlotte Hayes` |             |
+| `5550345228382224`   | `12/2027` | `Jane Smith`      | Credit (ZA) |
+| `5550347471347813`   | `12/2027` | `Jane Smith`      | Credit (ZA) |
+| `5550343875851690`   | `12/2027` | `Jane Smith`      | Credit (ZA) |
+| `5333395610225642`   | `12/2027` | `Jane Smith`      | Credit (HN) |
+| `5203821142568313`   | `12/2027` | `Jane Smith`      | Credit (CN) |
+| `5256787172322309`   | `12/2027` | `Jane Smith`      | Debit (MX)  |
+| `5579103297518880`   | `12/2027` | `Jane Smith`      | Debit (MX)  |
+| `5413037340736315`   | `12/2027` | `Jane Smith`      | Credit (DK) |
+| `5333378415223095`   | `12/2027` | `Jane Smith`      | Credit (KR) |
 
 ### Mastercard — Declined
 
-| Card Number          | Reason                          |
-|----------------------|---------------------------------|
-| `5333418445863914`   | General decline                 |
-| `5001638548736201`   | General decline                 |
-| `5333475572200849`   | Insufficient funds              |
-| `5333452804487502`   | Lost/stolen card                |
-| `5333540337444022`   | Expired card                    |
-| `5333554636535091`   | Transaction not permitted       |
-| `5333502383316074`   | Invalid transaction             |
-| `5333482348715142`   | Exceeds withdrawal limit        |
-| `5333498929343773`   | Exceeds withdrawal frequency    |
-| `5333578626428553`   | Restricted card                 |
-| `5333527145351713`   | Issuer/switch inoperative       |
-| `5333532915594096`   | Timeout                         |
-| `5333423768173347`   | External processing error       |
-| `5333518577223892`   | Format error                    |
-| `5333583123003909`   | Invalid CVV                     |
-| `5333463046218753`   | Do not honor                    |
+| Card Number          | Expiry    | Cardholder   | Reason          |
+|----------------------|-----------|--------------|-----------------|
+| `5200000000002235`   | `12/2028` | `REFUSED`    | General decline |
 
-### Mastercard — 3D Secure
+### AMEX — Approved
 
-| Card Number          | Outcome                                  |
-|----------------------|------------------------------------------|
-| `5333302221254276`   | 3DS approved (frictionless)              |
-| `2221008123677736`   | 3DS approved (with fingerprinting)       |
-| `5333418445863914`   | 3DS declined                             |
-| `5545060700001113`   | Frictionless flow (use amount `83.10`)   |
-| `5545060700002228`   | Challenge flow (use amount `115.20`)     |
+| Card Number       | Expiry    | Cardholder   |
+|-------------------|-----------|--------------|
+| `340000000002708` | `12/2030` | `Jane Smith` |
+
+### AMEX — Declined
+
+| Card Number       | Expiry    | Cardholder |
+|-------------------|-----------|------------|
+| `340000000002708` | `12/2028` | `REFUSED`  |
+
+### Discover / Diners — Approved
+
+| Card Number        | Expiry    | Cardholder   |
+|--------------------|-----------|--------------|
+| `6011000000002117` | `12/2030` | `Jane Smith` |
+
+### Discover / Diners — Declined
+
+| Card Number        | Expiry    | Cardholder |
+|--------------------|-----------|------------|
+| `6011000000002117` | `12/2028` | `REFUSED`  |
+
+### JCB — Approved
+
+| Card Number        | Expiry    | Cardholder   |
+|--------------------|-----------|--------------|
+| `3338000000000296` | `12/2030` | `Jane Smith` |
+
+### JCB — Declined
+
+| Card Number        | Expiry    | Cardholder |
+|--------------------|-----------|------------|
+| `3338000000000296` | `12/2028` | `REFUSED`  |
+
+### 3D Secure
+
+| Card Number        | Expiry    | Cardholder | Outcome                         |
+|--------------------|-----------|------------|---------------------------------|
+| `2221008123677736` | `12/2027` | `CL-BRW2`  | 3DS Mastercard (challenge flow) |
+| `5353029602254618` | `12/2027` | `FL-BRW1`  | 3DS Mastercard AFT              |
 
 ### Testing Tips
 
-- Use any future expiry date (e.g. `12/2027`) and any 3-digit CVC (e.g. `123`).
-- For 3DS challenge/frictionless flow cards, use the specific amounts noted in the table to trigger the expected behavior.
-- Provide `successUrl` and `failureUrl` when testing 3DS flows so you can observe the redirect behavior.
+- Each test card requires the **exact** expiry date and cardholder name shown in the table. Using any other value returns `400 Bad Request` with `"card is not valid for test payments"`.
+- Cardholder name matching is **case-insensitive** — `"jane smith"` and `"JANE SMITH"` both work where the table shows `Jane Smith`.
+- The CVC field accepts any 3-digit value (e.g. `123`).
+- Google Pay and Apple Pay payments are not subject to test card validation.
+- Provide `successUrl` and `failureUrl` when testing 3DS flows so you can observe the redirect behaviour.
 - Use a unique `externalId` for each test payment to avoid `409 Conflict` errors.
