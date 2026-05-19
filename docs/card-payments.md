@@ -353,9 +353,17 @@ stateDiagram-v2
 
 > **Warning:** Only **synthetic (fictitious) data** may be used in the sandbox environment. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **strictly forbidden**.
 
-Use the following test card numbers in the **sandbox** environment to simulate different payment outcomes. Each test card requires the **exact card number, expiry date, and cardholder name** shown in the table — the platform validates all three fields. Any other combination returns `400 Bad Request` with `"card is not valid for test payments"`.
+Use the following test cards in the **sandbox** environment to simulate different payment outcomes.
 
-The CVC field accepts any valid 3-digit value.
+### How test cards work
+
+Each row in the tables below represents a single test scenario with a deterministic outcome. To trigger that outcome, you must submit the payment using **all three fields exactly as shown**: card number, expiry date, and cardholder name. If any field does not match, the API rejects the request with `400 Bad Request: "card is not valid for test payments"` before any payment processing occurs.
+
+- Cardholder name matching is **case-insensitive** — `"jane smith"` and `"JANE SMITH"` both match `Jane Smith`.
+- The CVC field accepts any 3-digit value (e.g. `123`).
+- Google Pay and Apple Pay payments are not subject to test card validation.
+- Provide `successUrl` and `failureUrl` when testing 3DS flows so you can observe the redirect behaviour.
+- Use a unique `externalId` for each test payment to avoid `409 Conflict` errors.
 
 ### Visa — Approved
 
@@ -453,11 +461,3 @@ The CVC field accepts any valid 3-digit value.
 | `2221008123677736` | `12/2027` | `CL-BRW2`  | 3DS Mastercard (challenge flow) |
 | `5353029602254618` | `12/2027` | `FL-BRW1`  | 3DS Mastercard AFT              |
 
-### Testing Tips
-
-- Each test card requires the **exact** expiry date and cardholder name shown in the table. Using any other value returns `400 Bad Request` with `"card is not valid for test payments"`.
-- Cardholder name matching is **case-insensitive** — `"jane smith"` and `"JANE SMITH"` both work where the table shows `Jane Smith`.
-- The CVC field accepts any 3-digit value (e.g. `123`).
-- Google Pay and Apple Pay payments are not subject to test card validation.
-- Provide `successUrl` and `failureUrl` when testing 3DS flows so you can observe the redirect behaviour.
-- Use a unique `externalId` for each test payment to avoid `409 Conflict` errors.
