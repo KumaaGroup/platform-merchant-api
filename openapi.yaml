@@ -1332,6 +1332,7 @@ components:
         failureUrl:
           description: Redirect URL on failed payment
           format: uri
+          minLength: 1
           type: string
         metadata:
           description: Metadata
@@ -1339,12 +1340,15 @@ components:
         successUrl:
           description: Redirect URL on successful payment
           format: uri
+          minLength: 1
           type: string
       required:
         - card
         - customer
         - currency
         - amount
+        - successUrl
+        - failureUrl
         - externalId
       type: object
     PaymentCreatedResponse:
@@ -1646,6 +1650,7 @@ components:
         failureUrl:
           description: Redirect URL on failed payment
           format: uri
+          minLength: 1
           type: string
         metadata:
           description: Metadata
@@ -1653,11 +1658,14 @@ components:
         successUrl:
           description: Redirect URL on successful payment
           format: uri
+          minLength: 1
           type: string
       required:
         - customer
         - currency
         - amount
+        - successUrl
+        - failureUrl
         - externalId
       type: object
     PaymentTokenPaymentCreatedResponse:
