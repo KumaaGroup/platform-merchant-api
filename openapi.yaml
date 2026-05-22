@@ -809,7 +809,8 @@ components:
         state:
           description: ISO31662 alpha2 state code
           example: TX
-          pattern: ^[A-Z]{2}$
+          maxLength: 5
+          minLength: 2
           type: string
         zip:
           description: Zip code
