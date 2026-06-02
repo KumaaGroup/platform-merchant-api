@@ -157,6 +157,12 @@ paths:
                 $ref: '#/components/schemas/ErrorModel'
           description: Error
       servers:
+        - description: localhost
+          url: http://localhost:8080
+        - description: test merchants api
+          url: https://test-merchants-api.nonprod.paygate.systems
+        - description: sandbox merchants api
+          url: https://sandbox-merchants-api.nonprod.paygate.systems
         - description: test
           url: https://test-auth.nonprod.paygate.systems
         - description: sandbox
