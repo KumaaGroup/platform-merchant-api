@@ -173,7 +173,7 @@ When a payment is declined while still in `TOKEN_REQUESTED`, the `responseCode` 
 
 | `responseCode`        | When it is set                                                                  |
 |-----------------------|---------------------------------------------------------------------------------|
-| *timeout / expiry*    | The customer did not complete the wallet sheet within the allowed window. The exact code is method-specific — for Google Pay this is `GOOGLE_PAY_EXPIRED`. |
+| *timeout / expiry*    | The customer did not complete the wallet sheet within the allowed window. The exact code is method-specific — `GOOGLE_PAY_EXPIRED` for Google Pay, `APPLE_PAY_EXPIRED` for Apple Pay. |
 | `RESTRICTED_COUNTRY`  | The customer's detected location is not supported (checked at button-page load, before the wallet sheet is shown). |
 | `INTERNAL_ERROR`      | The platform could not recover a usable payment method from the wallet sheet.   |
 
@@ -205,7 +205,7 @@ APM payments are returned by the same [`GET /payment/{id}`](card-payments.md#get
 To test APM payments in the **sandbox** environment, open the `actionUrl` iframe on a device and browser that support the wallet you are testing, tap the button, and complete the sheet. Observe the payment transition through `TOKEN_REQUESTED → REQUESTED → ... → CAPTURED` via the `CAPTURED` webhook, or by polling `GET /payment/{id}`.
 
 - **Google Pay:** use a Google account enrolled in the [Google Pay TEST environment](https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist) with a test card saved in its Google Wallet, and open the `actionUrl` in Chrome on a device that supports Google Pay.
-- **Apple Pay:** use a compatible Apple device with Safari, signed into an Apple sandbox tester account with a test card provisioned in Wallet.
+- **Apple Pay:** Apple Pay testing follows Apple's standard prerequisites — a compatible Apple device with Safari, signed into iCloud with an [Apple Sandbox Tester account](https://developer.apple.com/apple-pay/sandbox-testing/), and one of Apple's test cards provisioned in Wallet. See Apple's official guides for setup and supported test cards: [Apple Pay Sandbox Testing](https://developer.apple.com/apple-pay/sandbox-testing/) and [Apple Pay on the Web](https://developer.apple.com/documentation/apple_pay_on_the_web).
 
 > **Warning:** Only **synthetic (fictitious) data** may be used in the sandbox environment. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **strictly forbidden**.
 
