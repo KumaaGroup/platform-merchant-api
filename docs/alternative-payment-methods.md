@@ -90,7 +90,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/apple
   -d '{ "externalId": "apm-order-002", "currency": "EUR", "amount": 29.99, "customer": { ... } }'
 ```
 
-Everything else (customer, billing address, currency, amount, `externalId`, redirect URLs, metadata) follows the same shape as a regular card payment. See the API reference for the full field list.
+Everything else (customer, billing address, currency, amount, `externalId`, redirect URLs, metadata) follows the same shape as a regular [card payment](card-payments.md#create-a-payment). See the API reference for the full field list.
 
 ### Response
 
