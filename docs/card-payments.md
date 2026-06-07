@@ -369,29 +369,16 @@ Each row in the tables below represents a single test scenario with a determinis
 
 | Card Number          | Expiry    | Cardholder        | Notes                 |
 |----------------------|-----------|-------------------|-----------------------|
-| `4000000000002701`   | `12/2032` | `Jane Smith`      | Visa                  |
-| `4000000000004970`   | `12/2032` | `Jane Smith`      | Cartes Bancaires Visa |
-| `4244951901005043`   | `08/2034` | `Sophia Turner`   |                       |
-| `4263704637473241`   | `10/2035` | `Noah Whitaker`   |                       |
-| `4761344136141390`   | `12/2027` | `Jane Smith`      | Debit (SG)            |
-| `4761261512059089`   | `12/2027` | `Jane Smith`      | Debit (CA)            |
-| `4159129252458086`   | `12/2027` | `Jane Smith`      | Credit (SV)           |
-| `4001888687412469`   | `12/2027` | `Jane Smith`      | Credit (DE)           |
-| `4001887232273343`   | `12/2027` | `Jane Smith`      | Credit (DE)           |
-| `4444493318246892`   | `12/2027` | `Jane Smith`      | Credit (MX)           |
-| `4815163523263534`   | `12/2027` | `Jane Smith`      | Debit (MX)            |
-| `4000287447386587`   | `12/2027` | `Jane Smith`      | Debit (US)            |
-| `4149124711257917`   | `12/2027` | `Jane Smith`      |                       |
-| `4462030000000000`   | `01/2035` | `John Smith`      |                       |
-| `4111111111111111`   | `01/2035` | `Jane Smith`      |                       |
+| `4244951901005043`   | `08/2034` | `Sophia Turner`   |                          |
+| `4149124711257917`   | `08/2030` | `जेन स्मिथ`          | Special character name   |
+| `4462030000000000`   | `01/2035` | `John Smith`      |                          |
+| `4111111111111111`   | `01/2035` | `Jane Smith`      |                          |
 
 ### Visa — Declined
 
 | Card Number          | Expiry    | Cardholder   | Reason             |
 |----------------------|-----------|--------------|--------------------|
-| `4000000000002701`   | `12/2028` | `REFUSED`    | General decline    |
-| `4000000000004970`   | `12/2028` | `REFUSED`    | General decline    |
-| `4008370896662369`   | `12/2027` | `Jane Smith` | General decline    |
+| `4107652651950141`   | `12/2027` | `Jane Smith` | Declined      |
 | `4111111111111105`   | `01/2035` | `Jane Smith` | Do not honor       |
 | `4111111111111143`   | `01/2035` | `Jane Smith` | Stolen card        |
 | `4111111111111151`   | `01/2035` | `Jane Smith` | Insufficient funds |
@@ -400,64 +387,13 @@ Each row in the tables below represents a single test scenario with a determinis
 
 | Card Number          | Expiry    | Cardholder        | Notes       |
 |----------------------|-----------|-------------------|-------------|
-| `5200000000002235`   | `11/2033` | `John Smith`      |             |
 | `5221744250525131`   | `07/2036` | `Charlotte Hayes` |             |
-| `5550345228382224`   | `12/2027` | `Jane Smith`      | Credit (ZA) |
-| `5550347471347813`   | `12/2027` | `Jane Smith`      | Credit (ZA) |
-| `5550343875851690`   | `12/2027` | `Jane Smith`      | Credit (ZA) |
-| `5333395610225642`   | `12/2027` | `Jane Smith`      | Credit (HN) |
-| `5203821142568313`   | `12/2027` | `Jane Smith`      | Credit (CN) |
-| `5256787172322309`   | `12/2027` | `Jane Smith`      | Debit (MX)  |
-| `5579103297518880`   | `12/2027` | `Jane Smith`      | Debit (MX)  |
-| `5413037340736315`   | `12/2027` | `Jane Smith`      | Credit (DK) |
-| `5333378415223095`   | `12/2027` | `Jane Smith`      | Credit (KR) |
-
-### Mastercard — Declined
-
-| Card Number          | Expiry    | Cardholder   | Reason          |
-|----------------------|-----------|--------------|-----------------|
-| `5200000000002235`   | `12/2028` | `REFUSED`    | General decline |
-
-### AMEX — Approved
-
-| Card Number       | Expiry    | Cardholder   |
-|-------------------|-----------|--------------|
-| `340000000002708` | `12/2030` | `Jane Smith` |
-
-### AMEX — Declined
-
-| Card Number       | Expiry    | Cardholder |
-|-------------------|-----------|------------|
-| `340000000002708` | `12/2028` | `REFUSED`  |
-
-### Discover / Diners — Approved
-
-| Card Number        | Expiry    | Cardholder   |
-|--------------------|-----------|--------------|
-| `6011000000002117` | `12/2030` | `Jane Smith` |
-
-### Discover / Diners — Declined
-
-| Card Number        | Expiry    | Cardholder |
-|--------------------|-----------|------------|
-| `6011000000002117` | `12/2028` | `REFUSED`  |
-
-### JCB — Approved
-
-| Card Number        | Expiry    | Cardholder   |
-|--------------------|-----------|--------------|
-| `3338000000000296` | `12/2030` | `Jane Smith` |
-
-### JCB — Declined
-
-| Card Number        | Expiry    | Cardholder |
-|--------------------|-----------|------------|
-| `3338000000000296` | `12/2028` | `REFUSED`  |
 
 ### 3D Secure
 
 | Card Number        | Expiry    | Cardholder | Outcome                         |
 |--------------------|-----------|------------|---------------------------------|
-| `2221008123677736` | `12/2027` | `CL-BRW2`  | 3DS Mastercard (challenge flow) |
-| `5353029602254618` | `12/2027` | `FL-BRW1`  | 3DS Mastercard AFT              |
+| `2221008123677736` | `12/2027` | `CL-BRW2`  | Mastercard - Use amount 151 for 3DS (challenge flow) |
+| `5353029602254618` | `12/2027` | `FL-BRW1`  | 3DS Mastercard (frictionless)   |
+| `5353029602254618` | `12/2028` | `CL-BRW1`  | 3DS Mastercard (challenge)      |
 
