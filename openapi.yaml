@@ -471,7 +471,7 @@ paths:
           description: Payment declined
       summary: Initialize a crypto payment
       tags:
-        - Payment
+        - Crypto Payment
   /payment/google-pay:
     post:
       description: Requests a new Google Pay payment
