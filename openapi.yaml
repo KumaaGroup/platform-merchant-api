@@ -1656,6 +1656,11 @@ components:
         useRefunds:
           description: Whether to fulfill the amount by first refunding captured payments (starting with the oldest within last 180 days) and then pushing any remaining amount to the card
           type: boolean
+        walletTransferAmount:
+          description: Payment amount that was transferred to merchant wallet
+          example: 12.34
+          format: decimal
+          type: number
       required:
         - id
         - externalId
@@ -1920,6 +1925,7 @@ components:
           enum:
             - CARD_PAYMENT
             - OPEN_BANKING
+            - WALLET_TRANSFER
           type: string
         headers:
           description: Custom headers
@@ -1956,6 +1962,7 @@ components:
           enum:
             - CARD_PAYMENT
             - OPEN_BANKING
+            - WALLET_TRANSFER
           type: string
         headers:
           description: Custom headers (max 5)
@@ -2002,6 +2009,7 @@ components:
           enum:
             - CARD_PAYMENT
             - OPEN_BANKING
+            - WALLET_TRANSFER
           type: string
         externalId:
           description: External reference ID
