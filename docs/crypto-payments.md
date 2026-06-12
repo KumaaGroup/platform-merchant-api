@@ -2,6 +2,8 @@
 
 Crypto Payments are the **new standard way to accept card payments** on the platform. Instead of collecting card data yourself and POSTing it to the API, you initiate a payment server-to-server and redirect your customer to a **Hosted Payments Page (HPP)** on the dedicated Kumaa Crypto domain (`topup.kumaacrypto.com`), where the customer completes the payment and funds your merchant crypto wallet.
 
+Because your systems no longer collect, transmit, or store card data, your **PCI DSS exposure is significantly reduced** — cardholder data is entered exclusively on the hosted payments page and never reaches your servers.
+
 > **Important — migration notice:** The direct one-step card payment API ([`POST /payment`](card-payments.md#create-a-payment)) is being phased out and will no longer be available to merchants. All merchants must migrate to the two-step Crypto Payment flow described on this page.
 
 ## What Changes for You
@@ -16,7 +18,7 @@ Crypto Payments are the **new standard way to accept card payments** on the plat
 | Settlement based on the payment amount               | Settlement based on `walletTransferAmount`                       |
 | `CARD_PAYMENT` webhook                               | `CARD_PAYMENT` webhook **plus** new `WALLET_TRANSFER` webhook    |
 
-Because you no longer handle card data, your PCI DSS exposure is significantly reduced — and card whitelisting is no longer feasible or required. The card whitelisting toggle now defaults to **disabled**.
+Because you no longer handle card data, card whitelisting is no longer feasible or required — the toggle now defaults to **disabled**.
 
 ## How It Works
 
@@ -75,7 +77,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/crypt
 |-----------------|--------|----------|------------------------------------------------------------------------------|
 | `externalId`    | string | Yes      | Your unique identifier ([details](idempotency.md))                           |
 | `customerEmail` | string | Yes      | Customer email — identifies the customer's crypto wallet (see [Step 3](#step-3--wallet-top-up)) |
-| `currency`      | string | Yes      | ISO 4217 currency code (e.g. `EUR`, `USD`)                                   |
+| `currency`      | string | Yes      | ISO 4217 currency code — see [Supported Currencies](#supported-currencies)   |
 | `amount`        | number | Yes      | Amount to charge (minimum `0.01`)                                            |
 | `successUrl`    | string | Yes      | Where the customer is redirected after a successful payment                  |
 | `failureUrl`    | string | Yes      | Where the customer is redirected after a failed payment                      |
@@ -85,6 +87,21 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/crypt
 The `customerEmail`, `amount` and `currency` are shown to the customer on the hosted page but are **not editable** there. The customer cannot change what you charge.
 
 The `successUrl` and `failureUrl` are not opened directly after the card payment — the platform completes the wallet top-up step first, then redirects the customer to the appropriate URL at the end of the flow.
+
+### Supported Currencies
+
+Each supported fiat currency is backed by a corresponding token in the crypto wallets. The currently supported currencies are:
+
+| Code  | Currency          |
+|-------|-------------------|
+| `EUR` | Euro              |
+| `USD` | US Dollar         |
+| `GBP` | British Pound     |
+| `CAD` | Canadian Dollar   |
+| `AUD` | Australian Dollar |
+| `NOK` | Norwegian Krone   |
+
+Requests with any other currency code are rejected with `422 Unprocessable Entity`.
 
 ### Response
 
