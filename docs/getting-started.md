@@ -173,6 +173,7 @@ All errors follow the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) 
 
 - [Authentication](authentication.md) — Token lifecycle, refresh strategy, and IP whitelisting
 - [Idempotency](idempotency.md) — How `externalId` prevents duplicate transactions
+- [Crypto Payments](crypto-payments.md) — The new hosted-page payment flow with merchant wallet top-ups
 - [Card Payments](card-payments.md) — Full payment flows, batch payments, and push-to-card
 - [Refunds](refunds.md) — Full and partial refund processing
 - [Open Banking](open-banking.md) — Bank transfer transactions
