@@ -6,6 +6,7 @@
   * [Authentication](docs/authentication.md)
   * [Webhooks](docs/webhooks.md)
   * [Error Handling](docs/error-handling.md)
+  * [Crypto Payments](docs/crypto-payments.md)
   * [Card Payments](docs/card-payments.md)
   * [Alternative Payment Methods](docs/alternative-payment-methods.md)
   * [Refunds](docs/refunds.md)
