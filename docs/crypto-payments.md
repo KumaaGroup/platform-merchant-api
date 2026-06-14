@@ -14,11 +14,10 @@ Because your systems no longer collect, transmit, or store card data, your **PCI
 | Single-step: payment only                            | Two-step: card payment, then wallet transfer to your merchant wallet |
 | `successUrl` / `failureUrl` optional                 | `successUrl` / `failureUrl` required                             |
 | You redirect the customer only for 3DS               | You always redirect the customer to the HPP                      |
-| Card whitelisting may be required                    | Card whitelisting does not apply (disabled by default)           |
 | Settlement based on the payment amount               | Settlement based on `walletTransferAmount`                       |
 | `CARD_PAYMENT` webhook                               | `CARD_PAYMENT` webhook **plus** new `WALLET_TRANSFER` webhook    |
 
-Because you no longer handle card data, card whitelisting is no longer feasible or required — the toggle now defaults to **disabled**.
+Card whitelisting works exactly as it does today — if it is enabled on your account, cards must still be whitelisted before they can be used (see [Card Whitelisting](#card-whitelisting) below).
 
 ## How It Works
 
@@ -244,10 +243,9 @@ curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_550e8400-
 
 ## Card Whitelisting
 
-Since your systems no longer see card data, you cannot whitelist a card before a payment happens. Therefore:
+Card whitelisting still applies to Crypto Payments, exactly as it does for the direct card API. If your merchant account has card whitelisting enabled, each card must be registered via the [whitelist API](blocklist-and-whitelist.md#card-whitelist) and clear the ~72-hour cooldown period **before** it can be used to pay.
 
-- Card whitelisting **does not apply** to Crypto Payments.
-- The card whitelisting requirement toggle now **defaults to disabled** for all merchants. Operations will disable it on existing production merchant accounts as part of the migration.
+Because the customer enters their card on the hosted payments page rather than through your systems, you must whitelist the card ahead of time (server-to-server, using your S2S token) so that the card the customer submits on the HPP is already approved. A payment attempted on the HPP with a non-whitelisted or cooldown-active card is **declined** — the `CARD_PAYMENT` webhook reports `status=DECLINED` and the customer is redirected to your `failureUrl`.
 
 The [Blocklist](blocklist-and-whitelist.md) (blocking customers) is unaffected.
 
@@ -283,5 +281,5 @@ Suggested end-to-end test:
 3. **Keep** your `CARD_PAYMENT` webhook — its payloads are unchanged.
 4. **Add** a `WALLET_TRANSFER` webhook and use it to trigger reconciliation.
 5. **Base settlement and reconciliation on `walletTransferAmount`** from `GET /payment/{id}`, not on the payment amount.
-6. **Remove card whitelisting** logic from your integration — it no longer applies.
+6. **Keep your card whitelisting** logic if it is enabled on your account — cards must still be whitelisted (and clear the cooldown) before the customer pays on the HPP. See [Card Whitelisting](#card-whitelisting).
 7. Verify the full flow in sandbox using the checklist in [Testing](#testing) before going live.
