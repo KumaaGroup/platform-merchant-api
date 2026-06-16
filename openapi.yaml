@@ -1402,6 +1402,7 @@ components:
           description: Payment status
           enum:
             - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1492,6 +1493,7 @@ components:
           description: Payment status
           enum:
             - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1627,6 +1629,7 @@ components:
           description: Payment status
           enum:
             - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1728,6 +1731,7 @@ components:
           description: Payment status
           enum:
             - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1817,6 +1821,7 @@ components:
           description: Payment status
           enum:
             - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1880,6 +1885,7 @@ components:
           description: Refund status (payment status value)
           enum:
             - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -2025,6 +2031,7 @@ components:
           description: Object status
           enum:
             - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
