@@ -1664,6 +1664,14 @@ components:
           example: 12.34
           format: decimal
           type: number
+        walletTransferStatus:
+          description: Wallet transfer status
+          enum:
+            - REQUESTED
+            - SUCCESS
+            - EXPIRED
+          example: SUCCESS
+          type: string
       required:
         - id
         - externalId
