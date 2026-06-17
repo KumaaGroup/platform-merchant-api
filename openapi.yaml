@@ -1668,9 +1668,9 @@ components:
           description: Wallet transfer status
           enum:
             - REQUESTED
-            - SUCCESS
+            - COMPLETED
             - EXPIRED
-          example: SUCCESS
+          example: REQUESTED
           type: string
       required:
         - id
