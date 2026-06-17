@@ -1,5 +1,7 @@
 # Card Payments
 
+> **Deprecation notice:** The direct one-step card payment flow described on this page (`POST /payment`, including batch payments) is being phased out and will no longer be available to merchants. New integrations must use [Crypto Payments](crypto-payments.md), and existing merchants must migrate. The information below remains relevant for payment statuses, `GET /payment`, and test cards.
+
 The Platform Merchants API supports single payments, batch payments, and push-to-card disbursements. All card payment endpoints require a Bearer token (see [Authentication](authentication.md)).
 
 ## Card Whitelisting Prerequisite

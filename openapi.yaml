@@ -448,6 +448,30 @@ paths:
       summary: Create payments batch
       tags:
         - Payment
+  /payment/crypto:
+    post:
+      description: Initialize a crypto payment
+      operationId: initialize-crypto-payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/PaymentCryptoInitializeData'
+              description: Payment crypto initialize data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentCryptoInitializeResponse'
+          description: OK
+        "422":
+          description: Payment declined
+      summary: Initialize a crypto payment
+      tags:
+        - Crypto Payment
   /payment/google-pay:
     post:
       description: Requests a new Google Pay payment
@@ -1377,6 +1401,8 @@ components:
         status:
           description: Payment status
           enum:
+            - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1390,6 +1416,97 @@ components:
             - COMPLETED
             - INVALID
           example: AUTH_REQUESTED
+          type: string
+      required:
+        - id
+        - externalId
+        - status
+      type: object
+    PaymentCryptoInitializeData:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          minimum: 0.01
+          multipleOf: 0.01
+          type: number
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        customerEmail:
+          description: Customer email
+          example: johndoe@gmail.com
+          format: email
+          type: string
+        customerIp:
+          description: Customer IP address
+          format: ipv4
+          type: string
+        externalId:
+          description: External reference ID
+          maxLength: 255
+          minLength: 1
+          pattern: ^[a-zA-Z0-9_-]+$
+          type: string
+        failureUrl:
+          description: Redirect URL on failed payment
+          format: uri
+          minLength: 1
+          type: string
+        metadata:
+          description: Metadata
+          type: string
+        successUrl:
+          description: Redirect URL on successful payment
+          format: uri
+          minLength: 1
+          type: string
+      required:
+        - customerEmail
+        - currency
+        - amount
+        - successUrl
+        - failureUrl
+        - externalId
+      type: object
+    PaymentCryptoInitializeResponse:
+      additionalProperties: false
+      properties:
+        actionUrl:
+          description: URL for required action (e.g., Crypto page URL)
+          type: string
+        externalId:
+          description: External ID provided by merchant
+          type: string
+        id:
+          description: Payment ID
+          example: pay_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        message:
+          description: Decline reason if applicable
+          type: string
+        status:
+          description: Payment status
+          enum:
+            - INITIALIZED
+            - EXPIRED
+            - AUTH_REQUESTED
+            - AUTHORIZED
+            - TOKEN_REQUESTED
+            - CAPTURED
+            - DECLINED
+            - REQUESTED
+            - PENDING
+            - PENDING_APPROVAL
+            - APPROVED
+            - REJECTED
+            - COMPLETED
+            - INVALID
+          example: INITIALIZED
           type: string
       required:
         - id
@@ -1511,6 +1628,8 @@ components:
         status:
           description: Payment status
           enum:
+            - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1540,6 +1659,19 @@ components:
         useRefunds:
           description: Whether to fulfill the amount by first refunding captured payments (starting with the oldest within last 180 days) and then pushing any remaining amount to the card
           type: boolean
+        walletTransferAmount:
+          description: Payment amount that was transferred to merchant wallet
+          example: 12.34
+          format: decimal
+          type: number
+        walletTransferStatus:
+          description: Wallet transfer status
+          enum:
+            - REQUESTED
+            - SUCCESS
+            - EXPIRED
+          example: SUCCESS
+          type: string
       required:
         - id
         - externalId
@@ -1606,6 +1738,8 @@ components:
         status:
           description: Payment status
           enum:
+            - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1694,6 +1828,8 @@ components:
         status:
           description: Payment status
           enum:
+            - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1756,6 +1892,8 @@ components:
         status:
           description: Refund status (payment status value)
           enum:
+            - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
@@ -1801,6 +1939,7 @@ components:
           enum:
             - CARD_PAYMENT
             - OPEN_BANKING
+            - WALLET_TRANSFER
           type: string
         headers:
           description: Custom headers
@@ -1837,6 +1976,7 @@ components:
           enum:
             - CARD_PAYMENT
             - OPEN_BANKING
+            - WALLET_TRANSFER
           type: string
         headers:
           description: Custom headers (max 5)
@@ -1883,6 +2023,7 @@ components:
           enum:
             - CARD_PAYMENT
             - OPEN_BANKING
+            - WALLET_TRANSFER
           type: string
         externalId:
           description: External reference ID
@@ -1897,6 +2038,8 @@ components:
         status:
           description: Object status
           enum:
+            - INITIALIZED
+            - EXPIRED
             - AUTH_REQUESTED
             - AUTHORIZED
             - TOKEN_REQUESTED
