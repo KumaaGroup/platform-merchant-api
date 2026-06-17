@@ -371,8 +371,6 @@ Each row in the tables below represents a single test scenario with a determinis
 
 | Card Number          | Expiry    | Cardholder        | Notes                 |
 |----------------------|-----------|-------------------|-----------------------|
-| `4244951901005043`   | `08/2034` | `Sophia Turner`   |                          |
-| `4149124711257917`   | `08/2030` | `जेन स्मिथ`          | Special character name   |
 | `4462030000000000`   | `01/2035` | `John Smith`      |                          |
 | `4111111111111111`   | `01/2035` | `Jane Smith`      |                          |
 
@@ -380,22 +378,6 @@ Each row in the tables below represents a single test scenario with a determinis
 
 | Card Number          | Expiry    | Cardholder   | Reason             |
 |----------------------|-----------|--------------|--------------------|
-| `4107652651950141`   | `12/2027` | `Jane Smith` | Declined      |
 | `4111111111111105`   | `01/2035` | `Jane Smith` | Do not honor       |
 | `4111111111111143`   | `01/2035` | `Jane Smith` | Stolen card        |
 | `4111111111111151`   | `01/2035` | `Jane Smith` | Insufficient funds |
-
-### Mastercard — Approved
-
-| Card Number          | Expiry    | Cardholder        | Notes       |
-|----------------------|-----------|-------------------|-------------|
-| `5221744250525131`   | `07/2036` | `Charlotte Hayes` |             |
-
-### 3D Secure
-
-| Card Number        | Expiry    | Cardholder | Outcome                         |
-|--------------------|-----------|------------|---------------------------------|
-| `2221008123677736` | `12/2027` | `CL-BRW2`  | Mastercard - Use amount 151 for 3DS (challenge flow) |
-| `5353029602254618` | `12/2027` | `FL-BRW1`  | 3DS Mastercard (frictionless)   |
-| `5353029602254618` | `12/2028` | `CL-BRW1`  | 3DS Mastercard (challenge)      |
-
