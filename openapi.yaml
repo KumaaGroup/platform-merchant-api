@@ -1091,9 +1091,6 @@ components:
         phone:
           description: Customer phone number
           type: string
-        ssn:
-          description: Masked SSN if provided
-          type: string
       required:
         - email
         - firstName
@@ -1537,11 +1534,6 @@ components:
           description: Customer phone number in E.164 format
           example: "+1234567890"
           pattern: ^\+[1-9]\d{1,14}$
-          type: string
-        ssn:
-          description: U.S. Social Security Number (optional, for compliance checks)
-          example: 123-45-6789
-          pattern: ^[0-9]{3}-[0-9]{2}-[0-9]{4}$
           type: string
       required:
         - email
