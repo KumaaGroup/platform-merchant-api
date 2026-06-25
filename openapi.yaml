@@ -1660,6 +1660,9 @@ components:
             - EXPIRED
           example: COMPLETED
           type: string
+        walletTransferTxHashUrl:
+          description: Wallet transfer tx hash url
+          type: string
       required:
         - id
         - externalId
