@@ -1410,7 +1410,6 @@ components:
             - APPROVED
             - REJECTED
             - COMPLETED
-            - INVALID
           example: AUTH_REQUESTED
           type: string
       required:
@@ -1500,7 +1499,6 @@ components:
             - APPROVED
             - REJECTED
             - COMPLETED
-            - INVALID
           example: INITIALIZED
           type: string
       required:
@@ -1630,7 +1628,6 @@ components:
             - APPROVED
             - REJECTED
             - COMPLETED
-            - INVALID
           type: string
         type:
           description: Transaction type
@@ -1741,7 +1738,6 @@ components:
             - APPROVED
             - REJECTED
             - COMPLETED
-            - INVALID
           example: AUTH_REQUESTED
           type: string
       required:
@@ -1830,7 +1826,6 @@ components:
             - APPROVED
             - REJECTED
             - COMPLETED
-            - INVALID
           example: TOKEN_REQUESTED
           type: string
       required:
@@ -1893,7 +1888,6 @@ components:
             - APPROVED
             - REJECTED
             - COMPLETED
-            - INVALID
           example: REQUESTED
           type: string
       required:
@@ -2035,7 +2029,6 @@ components:
             - PENDING_APPROVAL
             - APPROVED
             - REJECTED
-            - INVALID
             - IN_TRANSIT
             - FAILED
             - CANCELLED
