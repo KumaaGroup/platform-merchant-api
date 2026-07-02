@@ -48,8 +48,8 @@ When the `errors` array is present, each entry pinpoints a specific field that f
 
 | Code | Meaning     | Used By                                       |
 |------|-------------|-----------------------------------------------|
-| 200  | OK          | Successful GET, POST, PATCH requests          |
-| 201  | Created     | Webhook created, refund submitted             |
+| 200  | OK          | Successful GET, POST, PATCH requests (including refund submission) |
+| 201  | Created     | Webhook created                               |
 | 204  | No Content  | Webhook deleted successfully                  |
 
 ### Client Error Codes
@@ -61,7 +61,7 @@ When the `errors` array is present, each entry pinpoints a specific field that f
 | 403  | Forbidden            | IP not whitelisted (if [IP whitelisting](authentication.md#ip-whitelisting) is enabled) |
 | 404  | Not Found            | Payment, webhook, or resource does not exist               |
 | 409  | Conflict             | Duplicate `externalId` (see [Idempotency](idempotency.md)) |
-| 422  | Unprocessable Entity | Payment declined, refund exceeds payment amount            |
+| 422  | Unprocessable Entity | Payment declined, partial refund not supported for the payment |
 
 ### Server Error Codes
 

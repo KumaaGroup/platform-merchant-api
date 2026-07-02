@@ -100,7 +100,7 @@ Each supported fiat currency is backed by a corresponding token in the crypto wa
 | `AUD` | Australian Dollar |
 | `NOK` | Norwegian Krone   |
 
-Requests with any other currency code are rejected with `422 Unprocessable Entity`.
+Requests with any other well-formed currency code are rejected with `400 Bad Request`; codes that don't match the three-uppercase-letter format are rejected with `422 Unprocessable Entity`.
 
 ### Response
 
@@ -126,14 +126,15 @@ Requests with any other currency code are rejected with `422 Unprocessable Entit
 | Code | Meaning                                                     |
 |------|-------------------------------------------------------------|
 | 200  | Payment initialized successfully                            |
+| 400  | Invalid request (e.g. unsupported currency, non-positive amount) |
 | 409  | Duplicate `externalId` (see [Idempotency](idempotency.md))  |
-| 422  | Payment declined (e.g. unsupported currency)                |
+| 422  | Request fails schema validation (e.g. malformed URL or currency format) |
 
 ### The `actionUrl`
 
 - It points to the dedicated Kumaa Crypto payments domain (`topup.kumaacrypto.com` subdomains — e.g. `sandbox-topup.nonprod.kumaacrypto.com` in sandbox), **not** to your API domain.
 - It embeds a signed token that ties the page to this specific payment and your merchant account. Treat the URL as **opaque** — do not parse, modify, or construct it yourself.
-- The token is valid for **15 minutes**. If the customer does not complete the payment in time, initiate a new payment with a new `externalId`.
+- The token is valid for **15 minutes**. Shortly after it expires, a payment that is still `INITIALIZED` is automatically **declined** (see [Payment Lifecycle](#payment-lifecycle)). If the customer did not complete the payment in time, initiate a new payment with a new `externalId`.
 - The URL is single-purpose: it can only be used to complete this one payment.
 
 ## Step 2 — Redirect the Customer
@@ -152,6 +153,7 @@ The hosted page polls the payment status and shows the outcome to the customer. 
 stateDiagram-v2
     [*] --> INITIALIZED: POST /payment/crypto
     INITIALIZED --> REQUESTED: customer submits card on HPP
+    INITIALIZED --> DECLINED: token expired (payment abandoned)
     REQUESTED --> AUTH_REQUESTED: 3DS challenge required
     REQUESTED --> AUTHORIZED: no 3DS, authorized
     REQUESTED --> DECLINED: validation failed
@@ -165,7 +167,7 @@ stateDiagram-v2
 
 | Status           | Description                                                                   |
 |------------------|-------------------------------------------------------------------------------|
-| `INITIALIZED`    | Payment created via `POST /payment/crypto`, waiting for the customer on the HPP |
+| `INITIALIZED`    | Payment created via `POST /payment/crypto`, waiting for the customer on the HPP. If the customer never submits the payment, it is automatically declined shortly after the 15-minute token expires — the `CARD_PAYMENT` webhook reports `status: DECLINED` with `responseCode: INITIALIZED_PAYMENT_EXPIRED` |
 | `REQUESTED`      | Customer submitted card details, payment is being processed                  |
 | `AUTH_REQUESTED` | Customer must complete a 3DS challenge (handled entirely by the HPP)          |
 | `AUTHORIZED`     | Card authorized, funds reserved                                               |
@@ -182,9 +184,11 @@ After a successful card payment, the hosted page guides the customer through tra
   - **New customer:** a wallet is automatically generated, funded with the equivalent of the payment amount in the payment currency's token.
   - **Returning customer:** their existing wallet is shown, including any leftover balances from previous payments (balances are read from the public blockchain, which is the source of truth).
 - The customer confirms the transfer to your merchant wallet. The **default is the full available amount** in the payment's currency (current payment plus any leftover balance in that currency); the customer may choose to transfer less. Balances in other currencies are displayed but cannot be transferred in this flow.
-- Blockchain transfers are executed in grouped batches on a schedule (roughly every 10 minutes), so the on-chain top-up may complete a few minutes after the customer confirms it.
+- Blockchain transfers are executed in grouped batches on a schedule (every 15 minutes), so the on-chain top-up may complete several minutes after the customer confirms it.
 
 > **Note:** The wallet top-up never affects the card payment. A `CAPTURED` payment stays captured even if the blockchain transfer is delayed or fails — the platform will resolve the transfer separately.
+
+> **Note:** If the customer never confirms the transfer, the top-up step expires shortly after the 15-minute session token runs out. The card payment stays `CAPTURED`, and a `WALLET_TRANSFER` webhook with `status: EXPIRED` is sent (see [Webhooks](#webhooks) below).
 
 ### Merchant Wallet
 
@@ -197,7 +201,7 @@ You should configure **two** webhooks (one per event type — see [Webhooks](web
 | Event Type        | Triggered When                                                                                  |
 |-------------------|--------------------------------------------------------------------------------------------------|
 | `CARD_PAYMENT`    | The card payment status changes (`REQUESTED`, `AUTHORIZED`, `CAPTURED`, `DECLINED`, …) — unchanged from the previous integration |
-| `WALLET_TRANSFER` | **New.** The customer's top-up to your merchant wallet has been captured (sent at intent capture; the on-chain transfer may settle shortly after) |
+| `WALLET_TRANSFER` | **New.** The customer's top-up to your merchant wallet has been captured (`status: COMPLETED`, sent at intent capture; the on-chain transfer may settle shortly after), **or** the top-up window expired without the customer confirming a transfer (`status: EXPIRED`) |
 
 Create the new webhook:
 
@@ -224,15 +228,17 @@ The `WALLET_TRANSFER` notification payload follows the same shape as other webho
 }
 ```
 
-When you receive it, fetch the payment to learn the transferred amount (see below).
+The `status` field is `COMPLETED` when the top-up intent was captured, or `EXPIRED` when the customer completed the card payment but never confirmed a transfer before the session expired. When you receive a `COMPLETED` notification, fetch the payment to learn the transferred amount (see below).
 
 ## Tracking the Transferred Amount
 
-`GET /payment/{id}` now includes an optional field on every payment:
+`GET /payment/{id}` now includes optional wallet-transfer fields on every payment:
 
-| Field                  | Type   | Description                                                                 |
-|------------------------|--------|------------------------------------------------------------------------------|
-| `walletTransferAmount` | number | Amount transferred to your merchant wallet for this payment (in the payment currency). Absent until a transfer has been captured. |
+| Field                     | Type   | Description                                                                 |
+|---------------------------|--------|------------------------------------------------------------------------------|
+| `walletTransferAmount`    | number | Amount transferred to your merchant wallet for this payment (in the payment currency). Absent until a transfer has been captured. |
+| `walletTransferStatus`    | string | `COMPLETED` — the top-up was captured; `EXPIRED` — the customer never confirmed a transfer. Absent while the transfer is still possible. |
+| `walletTransferTxHashUrl` | string | Link to the on-chain transaction for the customer-to-merchant transfer. Absent until the blockchain transfer has been executed. |
 
 ```bash
 curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_550e8400-e29b-41d4-a716-446655440000 \
@@ -255,10 +261,12 @@ All errors follow the standard [Problem Details format](error-handling.md). Spec
 
 | Situation                                  | What happens                                                                          |
 |--------------------------------------------|----------------------------------------------------------------------------------------|
-| `actionUrl` token expired (after 15 min)   | The hosted page rejects the customer with an authorization error. Initiate a new payment with a new `externalId`. |
+| `actionUrl` token expired (after 15 min)   | The hosted page redirects the customer to a session-expired page. Initiate a new payment with a new `externalId`. |
 | Duplicate `externalId`                     | `409 Conflict` on `POST /payment/crypto` — see [Idempotency](idempotency.md)           |
 | Payment declined                           | `CARD_PAYMENT` webhook with `status=DECLINED` and a `responseCode`; the customer is redirected to your `failureUrl` |
-| Customer abandons the hosted page          | The payment stays `INITIALIZED` and never completes; no funds are moved                |
+| Customer abandons the hosted page          | Shortly after the token expires, the payment is declined automatically — `CARD_PAYMENT` webhook with `status=DECLINED` and `responseCode=INITIALIZED_PAYMENT_EXPIRED`; no funds are moved |
+| Customer opens the page from a restricted location | The customer is redirected to a blocked-location page and the payment is declined — `CARD_PAYMENT` webhook with `status=DECLINED` and `responseCode=BLOCKED` |
+| Customer pays but never confirms the wallet top-up | The card payment stays `CAPTURED`; a `WALLET_TRANSFER` webhook with `status=EXPIRED` is sent after the session expires |
 
 ## Testing
 
