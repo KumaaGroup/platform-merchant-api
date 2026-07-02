@@ -100,7 +100,7 @@ Each supported fiat currency is backed by a corresponding token in the crypto wa
 | `AUD` | Australian Dollar |
 | `NOK` | Norwegian Krone   |
 
-Requests with any other well-formed currency code are rejected with `400 Bad Request`; codes that don't match the three-uppercase-letter format are rejected with `422 Unprocessable Entity`.
+Requests with any other currency code are rejected with `422 Unprocessable Entity`.
 
 ### Response
 
@@ -126,9 +126,8 @@ Requests with any other well-formed currency code are rejected with `400 Bad Req
 | Code | Meaning                                                     |
 |------|-------------------------------------------------------------|
 | 200  | Payment initialized successfully                            |
-| 400  | Invalid request (e.g. unsupported currency, non-positive amount) |
 | 409  | Duplicate `externalId` (see [Idempotency](idempotency.md))  |
-| 422  | Request fails schema validation (e.g. malformed URL or currency format) |
+| 422  | Payment declined (e.g. unsupported currency)                |
 
 ### The `actionUrl`
 
