@@ -39,6 +39,7 @@ The `externalId` is required on the following endpoints:
 |-----------------------------------|----------------------------------------|
 | `POST /payment`                   | Create a card payment                  |
 | `POST /payment/batch`             | Create batch payments (per item)       |
+| `POST /payment/crypto`            | Initiate a crypto payment              |
 | `POST /payment/ptc`               | Create a push-to-card payment          |
 | `POST /payment/{id}/refund`       | Request a refund                       |
 | `POST /open-banking/transactions` | Create an open banking transaction     |

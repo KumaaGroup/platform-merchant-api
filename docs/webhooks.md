@@ -33,7 +33,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/webhooks \
 | Field       | Type    | Required | Description                                       |
 |-------------|---------|----------|---------------------------------------------------|
 | `url`       | string  | Yes      | HTTPS endpoint to receive notifications (max 2048 chars) |
-| `eventType` | string  | Yes      | Event type: `CARD_PAYMENT` or `OPEN_BANKING`      |
+| `eventType` | string  | Yes      | Event type: `CARD_PAYMENT`, `OPEN_BANKING`, or `WALLET_TRANSFER` |
 | `enabled`   | boolean | Yes      | Whether the webhook is active                     |
 | `headers`   | array   | No       | Custom headers sent with each notification (max 5) |
 
@@ -69,10 +69,11 @@ You can attach up to 5 custom headers to each webhook. These are included in eve
 
 ## Event Types
 
-| Event Type     | Triggered When                                          |
-|----------------|---------------------------------------------------------|
-| `CARD_PAYMENT` | A card payment status changes (authorized, captured, declined, refunded, charged back, etc.) |
-| `OPEN_BANKING` | An open banking transaction status changes (in transit, completed, failed, etc.) |
+| Event Type        | Triggered When                                          |
+|-------------------|---------------------------------------------------------|
+| `CARD_PAYMENT`    | A card payment status changes (authorized, captured, declined, etc.), or a **refund** reaches a terminal status (`COMPLETED`, `DECLINED`, `REJECTED`) — see [Refunds — Webhook Notifications](refunds.md#webhook-notifications) |
+| `OPEN_BANKING`    | An open banking transaction status changes (in transit, completed, failed, etc.) |
+| `WALLET_TRANSFER` | A [Crypto Payment](crypto-payments.md) wallet top-up is captured (`COMPLETED`) or expires unconfirmed (`EXPIRED`) — see [Crypto Payments — Webhooks](crypto-payments.md#webhooks) |
 
 ## Webhook Object Statuses
 
@@ -81,11 +82,7 @@ The `status` field in a `CARD_PAYMENT` webhook payload reflects the current stat
 - Card payments and push-to-card — [Payment Lifecycle](card-payments.md#payment-lifecycle), [Push-to-Card Lifecycle](card-payments.md#push-to-card-lifecycle)
 - Refunds — [Refund Lifecycle](refunds.md#refund-lifecycle)
 
-### `INVALID` is special
-
-Almost every webhook status corresponds to a row you can fetch via `GET /payment/{objectId}`. **`INVALID` is the exception.** It is a one-shot signal that a submission was rejected before any record could be created — `GET /payment/{objectId}` for that id returns `404 Not Found`.
-
-`INVALID` is currently emitted only for refund submissions that hit a duplicate-`externalId` conflict. Card payment and push-to-card duplicates are rejected synchronously with `409 Conflict` from the create endpoint instead, so merchants will not receive an `INVALID` webhook for those flows. See [Refunds — `INVALID` webhook signal](refunds.md#invalid-webhook-signal) for the payload shape and recommended handling.
+Every webhook status corresponds to a stored record that you can fetch via `GET /payment/{objectId}`. Duplicate-`externalId` submissions never produce a webhook — they are rejected synchronously with `409 Conflict` from the create endpoint (see [Idempotency](idempotency.md)).
 
 ## List Webhooks
 

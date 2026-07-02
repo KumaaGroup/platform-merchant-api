@@ -30,19 +30,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_a
 
 ### Response
 
-**200 OK** — refund processed immediately:
-
-```json
-{
-  "id": "ref_def456",
-  "paymentId": "pay_abc123",
-  "amount": 10.00,
-  "createdAt": "2026-03-04T12:00:00Z",
-  "status": "COMPLETED"
-}
-```
-
-**201 Created** — refund submitted for processing:
+Refunds are processed **asynchronously**. A successful request returns **200 OK** with the refund in `REQUESTED` status — the refund record is created immediately and then validated and processed in the background. The final outcome is delivered via [webhook](#webhook-notifications) and can also be polled via `GET /payment/{id}`.
 
 ```json
 {
@@ -53,6 +41,8 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_a
   "status": "REQUESTED"
 }
 ```
+
+For a full refund (request without `amount`), the response `amount` is the full amount of the original payment.
 
 ### Response Fields
 
@@ -66,11 +56,15 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_a
 
 ### Status Codes
 
-| Code | Meaning                                             |
-|------|-----------------------------------------------------|
-| 200  | Refund processed successfully                       |
-| 201  | Refund submitted for processing                     |
-| 422  | Refund cannot be processed (e.g. exceeds payment amount) |
+| Code | Meaning                                                            |
+|------|--------------------------------------------------------------------|
+| 200  | Refund accepted and submitted for processing (`status: REQUESTED`) |
+| 400  | Invalid request (e.g. non-positive or malformed `amount`)          |
+| 404  | Payment not found                                                  |
+| 409  | Duplicate `externalId` (see [Idempotency](idempotency.md))         |
+| 422  | Partial refund not supported for this payment                      |
+
+> **Note:** Whether the requested amount exceeds the remaining refundable amount is verified **asynchronously** during processing, not at submission. If the check fails, the refund transitions to `DECLINED` (see the [lifecycle](#refund-lifecycle) below) — you are notified via webhook rather than an HTTP error.
 
 ## Checking Refund Status
 
@@ -89,15 +83,15 @@ A refund follows its own state machine, separate from the [card-payment lifecycl
 
 ```mermaid
 stateDiagram-v2
-    [*] --> REQUESTED: validation passed
-    [*] --> DECLINED: validation failed at submission
-    REQUESTED --> PENDING: ratio < threshold (auto-approved)
-    REQUESTED --> PENDING_APPROVAL: ratio >= threshold or threshold = 0
-    REQUESTED --> APPROVED: platform-initiated (skip threshold)
-    PENDING --> APPROVED
+    [*] --> REQUESTED: refund accepted (HTTP 200)
+    REQUESTED --> PENDING: validation passed
+    REQUESTED --> DECLINED: validation failed (e.g. refundable amount exceeded)
+    PENDING --> APPROVED: ratio < threshold, or platform-initiated
+    PENDING --> PENDING_APPROVAL: ratio >= threshold or threshold = 0
     PENDING_APPROVAL --> APPROVED: admin approves
     PENDING_APPROVAL --> REJECTED: admin rejects
-    APPROVED --> COMPLETED
+    APPROVED --> COMPLETED: accepted by payment processor
+    APPROVED --> DECLINED: declined by payment processor
     COMPLETED --> [*]
     DECLINED --> [*]
     REJECTED --> [*]
@@ -105,45 +99,40 @@ stateDiagram-v2
 
 | Status             | Description                                                                                  |
 |--------------------|----------------------------------------------------------------------------------------------|
-| `REQUESTED`        | Refund created and being evaluated against the merchant's refund-ratio threshold              |
-| `PENDING`          | Within the merchant's refund-ratio threshold — auto-approved and queued for processing        |
-| `PENDING_APPROVAL` | Above the threshold (or threshold disabled) — awaiting manual review by platform administration |
+| `REQUESTED`        | Refund created and queued for validation                                                      |
+| `PENDING`          | Validation passed (refundable amount verified) — being evaluated against the merchant's refund-ratio threshold |
+| `PENDING_APPROVAL` | At or above the threshold (or threshold disabled) — awaiting manual review by platform administration |
 | `APPROVED`         | Approved (auto or by admin), refund is being sent to the payment processor                    |
 | `COMPLETED`        | Refund successfully processed by the payment processor (terminal)                             |
 | `REJECTED`         | Refund rejected during manual review by platform administration (terminal)                    |
-| `DECLINED`         | Refund failed validation at submission, e.g. parent payment not found, refundable amount exceeded, or payment not refundable (terminal) |
+| `DECLINED`         | Refund failed validation (e.g. refundable amount exceeded, payment not refundable) or was declined by the payment processor (terminal) |
 
 > **Note on `PENDING_APPROVAL`:** No action is required from the merchant — the platform-administration team will process the approval.
 
-> **Note on platform-initiated refunds:** Refunds initiated directly by platform administration bypass the threshold evaluation and move straight from `REQUESTED` to `APPROVED`.
+> **Note on platform-initiated refunds:** Refunds initiated directly by platform administration bypass the threshold evaluation and move straight from `PENDING` to `APPROVED`.
 
-### `INVALID` webhook signal
+## Webhook Notifications
 
-A refund submission may also produce a `CARD_PAYMENT` webhook with `status: INVALID`. Unlike every other status in this section, `INVALID` is **not a stored state** — it is a one-shot signal that the refund was rejected before any record could be created.
+A `CARD_PAYMENT` webhook **is sent when a refund reaches a terminal status** — `COMPLETED`, `DECLINED`, or `REJECTED`. Intermediate statuses (`REQUESTED`, `PENDING`, `PENDING_APPROVAL`, `APPROVED`) do **not** trigger webhook notifications; poll `GET /payment/{id}` if you need to observe them.
 
-It is sent when a duplicate `externalId` is detected at submission time. The webhook payload identifies the rejected refund attempt:
+The webhook payload identifies the refund by its `id` (as `objectId`) and your `externalId`:
 
 ```json
 {
   "eventType": "CARD_PAYMENT",
   "objectId": "ref_def456",
   "externalId": "refund-order-001",
-  "status": "INVALID",
-  "responseCode": "duplicate externalId conflicts with existing payment",
+  "status": "COMPLETED",
   "timestamp": "2026-03-04T12:00:00Z"
 }
 ```
 
-How merchants should handle it:
+For `DECLINED` refunds, the `responseCode` field carries the decline reason. See [Webhooks](webhooks.md) for configuration and delivery details.
 
-- **`GET /payment/{objectId}`** for that `objectId` will return `404 Not Found` — no row exists.
-- **Retrying the same `externalId`** produces the same `INVALID` outcome (or a synchronous `409 Conflict` if you retry over HTTP). This means a refund request with this externalId has already been accepted. In case this is a legitimate second refund request, submit it with a fresh `externalId`.
-- **Treat `INVALID` as terminal for that submission attempt.** No further webhook will arrive for the same `objectId`.
-
-See [Idempotency](idempotency.md) for guidance on choosing `externalId` values.
+> **Note on duplicate `externalId`:** a duplicate is always rejected synchronously with `409 Conflict` — no refund record is created and no webhook is sent. See [Idempotency](idempotency.md) for guidance on choosing `externalId` values.
 
 ## Best Practices
 
 - **Use a unique `externalId` per refund** to ensure idempotency. If you retry a refund request with the same `externalId`, you'll receive a `409 Conflict` rather than a duplicate refund.
-- **Check the original payment status** before requesting a refund. Refunds can only be issued against payments that have been captured or completed.
+- **Check the original payment status** before requesting a refund. Refunds can only be issued against payments in `CAPTURED` status.
 - **Track partial refunds carefully.** The total of all partial refunds must not exceed the original payment amount.
