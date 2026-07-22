@@ -1684,7 +1684,7 @@ components:
           type: number
         card:
           allOf:
-            - $ref: '#/components/schemas/PaymentCard'
+            - $ref: '#/components/schemas/PtcCard'
           description: Card details
         currency:
           description: ISO4217 currency code
@@ -1832,6 +1832,28 @@ components:
         - id
         - externalId
         - status
+      type: object
+    PtcCard:
+      additionalProperties: false
+      properties:
+        expiry:
+          allOf:
+            - $ref: '#/components/schemas/CardExpiry'
+          description: Card expiry
+        name:
+          description: Cardholder name
+          example: John Doe
+          minLength: 1
+          type: string
+        number:
+          description: Card number
+          example: "4242424242424242"
+          pattern: ^[0-9]{12,19}$
+          type: string
+      required:
+        - number
+        - name
+        - expiry
       type: object
     RefundCreateData:
       additionalProperties: false
