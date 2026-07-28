@@ -398,6 +398,41 @@ paths:
       summary: Create refund
       tags:
         - Payment
+  /payment/{id}/refund/initialize:
+    post:
+      description: Request payment refund
+      operationId: initialize-refund
+      parameters:
+        - description: Payment ID to refund
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Payment ID to refund
+            example: pay_550e8400-e29b-41d4-a716-446655440000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/RefundInitializeData'
+              description: Refund creation data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundInitializeResponse'
+          description: OK
+        "201":
+          description: Refund request submitted
+        "422":
+          description: Request unprocessable
+      summary: Initialize refund
+      tags:
+        - Payment
   /payment/apple-pay:
     post:
       description: Requests a new Apple Pay payment
@@ -496,6 +531,32 @@ paths:
       summary: Create Google Pay payment
       tags:
         - Payment
+  /payment/initialize:
+    post:
+      description: Initializes a payment
+      operationId: initialize-payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/PaymentInitializeData'
+              description: Payment initialize data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInitializeResponse'
+          description: OK
+        "409":
+          description: externalId already used by this merchant with a different payload
+        "422":
+          description: Validation error
+      summary: Initialize a payment
+      tags:
+        - Payment
   /payment/ptc:
     post:
       description: Requests a new push-to-card payment
@@ -518,6 +579,83 @@ paths:
         "422":
           description: Push-to-card payment declined
       summary: Create push-to-card payment
+      tags:
+        - Payment
+  /payment/record:
+    get:
+      description: Lists existing payment records with pagination
+      operationId: list-payment-records
+      parameters:
+        - description: Cursor for pagination
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Cursor for pagination
+            type: string
+        - description: Maximum number of items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            description: Maximum number of items to return
+            example: 20
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Filter by external ID
+          explode: false
+          in: query
+          name: externalId
+          schema:
+            description: Filter by external ID
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecordListResponse'
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Error
+      summary: List payment records
+      tags:
+        - Payment
+  /payment/record/{id}:
+    get:
+      description: Retrieves an existing payment record by ID
+      operationId: get-payment-record
+      parameters:
+        - description: Payment, refund, or chargeback ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Payment, refund, or chargeback ID
+            example: pay_550e8400-e29b-41d4-a716-446655440000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecordPayloadResponse'
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Error
+      summary: Get payment record
       tags:
         - Payment
   /webhooks:
@@ -792,6 +930,78 @@ components:
         - expires_in
         - token_type
       type: object
+    BankTransferPayment:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Bank transfer amount
+          example: 99.99
+          format: decimal
+          type: number
+        createdAt:
+          description: Creation timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+        currency:
+          description: ISO4217 currency code (always EUR)
+          example: EUR
+          type: string
+        finishedAt:
+          description: Terminal status timestamp (when transaction reached COMPLETED, FAILED or CANCELLED)
+          format: date-time
+          type: string
+        iban:
+          description: IBAN if available
+          type: string
+        id:
+          description: Bank transfer ID
+          example: bkt_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        modifiedAt:
+          description: Last modification timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+        sender:
+          allOf:
+            - $ref: '#/components/schemas/BankTransferSender'
+          description: Sender information
+        status:
+          description: Bank transfer status
+          enum:
+            - PENDING
+            - IN_TRANSIT
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+          type: string
+      required:
+        - id
+        - status
+        - amount
+        - currency
+        - sender
+        - createdAt
+        - modifiedAt
+      type: object
+    BankTransferSender:
+      additionalProperties: false
+      properties:
+        email:
+          description: Sender email address
+          example: joe.doe@gmail.com
+          format: email
+          type: string
+        name:
+          description: Sender full name
+          example: Joe Doe
+          minLength: 1
+          type: string
+      required:
+        - email
+        - name
+      type: object
     BatchPaymentCreateData:
       additionalProperties: false
       properties:
@@ -896,6 +1106,77 @@ components:
         - number
         - binCode
         - last4
+      type: object
+    CardPayment:
+      additionalProperties: false
+      properties:
+        actionUrl:
+          description: URL for required action (e.g., 3DS authentication)
+          type: string
+        amount:
+          description: Card payment amount
+          example: 12.34
+          format: decimal
+          type: number
+        amountRefunded:
+          description: Card payment amount that was refunded or charged back
+          example: 12.34
+          format: decimal
+          type: number
+        billingAddress:
+          allOf:
+            - $ref: '#/components/schemas/BillingAddress'
+          description: Billing address
+        card:
+          allOf:
+            - $ref: '#/components/schemas/CardPayloadResponse'
+          description: Card details
+        createdAt:
+          description: Creation timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          type: string
+        finishedAt:
+          description: Terminal status timestamp (when payment reached COMPLETED, DECLINED, REJECTED or INVALID)
+          format: date-time
+          type: string
+        id:
+          description: Card payment ID
+          example: crd_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        phone:
+          description: Customer phone number in E.164 format
+          example: "+1234567890"
+          type: string
+        responseCode:
+          description: Decline reason code if applicable
+          type: string
+        status:
+          description: Card payment status
+          enum:
+            - REQUESTED
+            - AUTH_REQUESTED
+            - AUTHORIZED
+            - CAPTURED
+            - DECLINED
+          type: string
+        updatedAt:
+          description: Last update timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - status
+        - amount
+        - currency
+        - card
+        - createdAt
+        - updatedAt
       type: object
     CardWhitelistCreateData:
       additionalProperties: false
@@ -1296,6 +1577,27 @@ components:
         - email
         - name
       type: object
+    PaymentAttempt:
+      additionalProperties: false
+      properties:
+        bankTransfer:
+          allOf:
+            - $ref: '#/components/schemas/BankTransferPayment'
+          description: Present when method is BANK_TRANSFER
+        card:
+          allOf:
+            - $ref: '#/components/schemas/CardPayment'
+          description: Present when method is CARD
+        method:
+          description: Which method this attempt used
+          enum:
+            - CARD
+            - BANK_TRANSFER
+          example: CARD
+          type: string
+      required:
+        - method
+      type: object
     PaymentCard:
       additionalProperties: false
       properties:
@@ -1539,6 +1841,98 @@ components:
         - lastName
         - billingAddress
       type: object
+    PaymentInitializeData:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          minimum: 0.01
+          multipleOf: 0.01
+          type: number
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        customerEmail:
+          description: Customer email
+          example: johndoe@gmail.com
+          format: email
+          minLength: 1
+          type: string
+        customerFirstName:
+          description: Customer first name
+          example: John
+          minLength: 1
+          type: string
+        customerIp:
+          description: Customer IP address
+          format: ipv4
+          type: string
+        customerLastName:
+          description: Customer last name
+          example: Doe
+          minLength: 1
+          type: string
+        externalId:
+          description: External reference ID
+          maxLength: 255
+          minLength: 1
+          pattern: ^[a-zA-Z0-9_-]+$
+          type: string
+        failureUrl:
+          description: Redirect URL on failed payment
+          format: uri
+          minLength: 1
+          type: string
+        metadata:
+          description: Metadata
+          type: string
+        successUrl:
+          description: Redirect URL on successful payment
+          format: uri
+          minLength: 1
+          type: string
+      required:
+        - customerEmail
+        - customerFirstName
+        - customerLastName
+        - currency
+        - amount
+        - successUrl
+        - failureUrl
+        - externalId
+      type: object
+    PaymentInitializeResponse:
+      additionalProperties: false
+      properties:
+        actionUrl:
+          description: URL of the hosted payment page
+          type: string
+        externalId:
+          description: External ID provided by merchant
+          type: string
+        id:
+          description: Payment ID
+          example: pay_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        status:
+          description: Payment status
+          enum:
+            - INITIALIZED
+            - PENDING
+            - COMPLETED
+            - DECLINED
+          example: INITIALIZED
+          type: string
+      required:
+        - id
+        - externalId
+        - status
+        - actionUrl
+      type: object
     PaymentListResponse:
       additionalProperties: false
       properties:
@@ -1632,6 +2026,7 @@ components:
         type:
           description: Transaction type
           enum:
+            - PAYMENT
             - CHECKOUT
             - REFUND
             - CHARGEBACK
@@ -1744,6 +2139,143 @@ components:
         - id
         - externalId
         - status
+      type: object
+    PaymentRecordListResponse:
+      additionalProperties: false
+      properties:
+        items:
+          description: Payment list
+          items:
+            $ref: '#/components/schemas/PaymentRecordPayloadResponse'
+          type: array
+        nextCursor:
+          description: Next cursor
+          type: string
+      required:
+        - items
+      type: object
+    PaymentRecordPayloadResponse:
+      additionalProperties: false
+      properties:
+        actionUrl:
+          description: URL of the hosted payment page
+          type: string
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          type: number
+        attempts:
+          description: All attempts, across every method, oldest first
+          items:
+            $ref: '#/components/schemas/PaymentAttempt'
+          type: array
+        createdAt:
+          description: Creation timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          type: string
+        customerEmail:
+          description: Customer email
+          type: string
+        customerFirstName:
+          description: Customer first name
+          type: string
+        customerLastName:
+          description: Customer last name
+          type: string
+        details:
+          allOf:
+            - $ref: '#/components/schemas/RefundDetails'
+          description: Refund or chargeback details (available for REFUND, CHARGEBACK)
+        externalId:
+          description: External ID provided by merchant
+          type: string
+        failureUrl:
+          description: Redirect URL on failed payment
+          type: string
+        finishedAt:
+          description: Terminal status timestamp (when payment reached COMPLETED, DECLINED)
+          format: date-time
+          type: string
+        id:
+          description: Payment, refund, or chargeback ID
+          example: pay_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        metadata:
+          description: Associated metadata
+          type: string
+        parentPaymentId:
+          description: Parent payment ID (available for REFUND, CHARGEBACK)
+          type: string
+        responseCode:
+          description: Decline reason code if applicable
+          type: string
+        status:
+          description: Payment status
+          enum:
+            - INITIALIZED
+            - PENDING
+            - COMPLETED
+            - DECLINED
+          example: INITIALIZED
+          type: string
+        successUrl:
+          description: Redirect URL on successful payment
+          type: string
+        type:
+          description: Transaction type
+          enum:
+            - PAYMENT
+            - CHECKOUT
+            - REFUND
+            - CHARGEBACK
+            - PUSH-TO-CARD
+          type: string
+        updatedAt:
+          description: Last update timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+        walletTransferAmount:
+          description: Payment amount that was transferred to merchant wallet
+          example: 12.34
+          format: decimal
+          type: number
+        walletTransferCurrency:
+          description: Currency of the wallet transfer amount
+          example: USD
+          type: string
+        walletTransferStatus:
+          description: Wallet transfer status
+          enum:
+            - COMPLETED
+            - EXPIRED
+          example: COMPLETED
+          type: string
+        walletTransferTxHashUrl:
+          description: Wallet transfer tx hash url
+          type: string
+      required:
+        - id
+        - type
+        - externalId
+        - status
+        - customerEmail
+        - customerFirstName
+        - customerLastName
+        - currency
+        - amount
+        - successUrl
+        - failureUrl
+        - actionUrl
+        - createdAt
+        - updatedAt
+        - attempts
       type: object
     PaymentTokenPaymentCreateData:
       additionalProperties: false
@@ -1917,6 +2449,116 @@ components:
         - paymentId
         - amount
         - createdAt
+        - status
+      type: object
+    RefundDetails:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Refund or chargeback amount
+          example: 12.34
+          format: decimal
+          type: number
+        card:
+          allOf:
+            - $ref: '#/components/schemas/CardPayloadResponse'
+          description: Card details
+        createdAt:
+          description: Creation timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          type: string
+        finishedAt:
+          description: Terminal status timestamp (when payment reached COMPLETED, DECLINED, REJECTED)
+          format: date-time
+          type: string
+        id:
+          description: Refund or chargeback ID
+          example: ref_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        responseCode:
+          description: Decline reason code if applicable
+          type: string
+        status:
+          description: Refund or chargeback status
+          enum:
+            - REQUESTED
+            - PENDING
+            - PENDING_APPROVAL
+            - APPROVED
+            - COMPLETED
+            - DECLINED
+            - REJECTED
+          type: string
+        updatedAt:
+          description: Last update timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - status
+        - amount
+        - currency
+        - card
+        - createdAt
+        - updatedAt
+      type: object
+    RefundInitializeData:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Refund amount (full amount if omitted)
+          example: 5
+          format: decimal
+          minimum: 0.01
+          multipleOf: 0.01
+          type: number
+        externalId:
+          description: External reference ID
+          maxLength: 255
+          minLength: 1
+          pattern: ^[a-zA-Z0-9_-]+$
+          type: string
+      required:
+        - externalId
+      type: object
+    RefundInitializeResponse:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Refund amount
+          example: 12.34
+          format: decimal
+          type: number
+        id:
+          description: Refund ID
+          example: ref_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        paymentId:
+          description: Associated payment ID
+          example: pay_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        status:
+          description: Refund status
+          enum:
+            - REQUESTED
+            - PENDING
+            - PENDING_APPROVAL
+            - APPROVED
+            - COMPLETED
+            - DECLINED
+            - REJECTED
+          example: REQUESTED
+          type: string
+      required:
+        - id
+        - paymentId
+        - amount
         - status
       type: object
     TokenPaymentCallbackData:
