@@ -658,6 +658,106 @@ paths:
       summary: Get payment record
       tags:
         - Payment
+  /push-to-card/initialize:
+    post:
+      description: Initializes a push-to-card payment
+      operationId: initialize-push-to-card-payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/PushToCardPaymentInitializeData'
+              description: Push-to-card payment initialize data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushToCardPaymentInitializeResponse'
+          description: OK
+        "422":
+          description: Push-to-card payment declined
+      summary: Initialize a push-to-card payment
+      tags:
+        - Push to Card
+  /push-to-card/payment:
+    get:
+      description: Lists existing push-to-card payments with pagination
+      operationId: list-push-to-card-payments
+      parameters:
+        - description: Cursor for pagination
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Cursor for pagination
+            type: string
+        - description: Maximum number of items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            description: Maximum number of items to return
+            example: 20
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Filter by external ID
+          explode: false
+          in: query
+          name: externalId
+          schema:
+            description: Filter by external ID
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushToCardPaymentListResponse'
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Error
+      summary: List push-to-card payments
+      tags:
+        - Push to Card
+  /push-to-card/payment/{id}:
+    get:
+      description: Retrieves an existing push-to-card payment by ID
+      operationId: get-push-to-card-payment
+      parameters:
+        - description: push-to-card payment ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: push-to-card payment ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushToCardPaymentResponse'
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Error
+      summary: Get push-to-card payment
+      tags:
+        - Push to Card
   /webhooks:
     get:
       description: Returns all webhooks for the authenticated merchant
@@ -2386,6 +2486,152 @@ components:
         - number
         - name
         - expiry
+      type: object
+    PushToCardPaymentInitializeData:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          minimum: 0.01
+          multipleOf: 0.01
+          type: number
+        card:
+          allOf:
+            - $ref: '#/components/schemas/PtcCard'
+          description: Card details
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        externalId:
+          description: External reference ID
+          maxLength: 255
+          minLength: 1
+          pattern: ^[a-zA-Z0-9_-]+$
+          type: string
+        metadata:
+          description: Metadata
+          type: string
+        useRefunds:
+          description: Whether to fulfill the amount by first refunding captured payments (starting with the oldest within last 180 days) and then pushing any remaining amount to the card
+          type: boolean
+      required:
+        - card
+        - currency
+        - amount
+        - useRefunds
+        - externalId
+      type: object
+    PushToCardPaymentInitializeResponse:
+      additionalProperties: false
+      properties:
+        externalId:
+          description: External ID provided by merchant
+          type: string
+        id:
+          description: Push-to-card payment ID
+          example: ptc_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        message:
+          description: Decline reason if applicable
+          type: string
+        status:
+          description: Push-to-card payment status
+          enum:
+            - REQUESTED
+            - APPROVED
+            - REJECTED
+            - COMPLETED
+            - DECLINED
+          example: REQUESTED
+          type: string
+      required:
+        - id
+        - externalId
+        - status
+      type: object
+    PushToCardPaymentListResponse:
+      additionalProperties: false
+      properties:
+        items:
+          description: Push-to-card payment list
+          items:
+            $ref: '#/components/schemas/PushToCardPaymentResponse'
+          type: array
+        nextCursor:
+          description: Next cursor
+          type: string
+      required:
+        - items
+      type: object
+    PushToCardPaymentResponse:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          type: number
+        card:
+          allOf:
+            - $ref: '#/components/schemas/CardPayloadResponse'
+          description: Card details
+        createdAt:
+          description: Creation timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          type: string
+        externalId:
+          description: External ID provided by merchant
+          type: string
+        finishedAt:
+          description: Terminal status timestamp (when payment reached COMPLETED, DECLINED, REJECTED)
+          format: date-time
+          type: string
+        id:
+          description: Push-to-card payment ID
+          example: ptc_550e8400-e29b-41d4-a716-446655440000
+          type: string
+        metadata:
+          description: Associated metadata
+          type: string
+        responseCode:
+          description: Decline reason code if applicable
+          type: string
+        status:
+          description: Push-to-card payment status
+          enum:
+            - REQUESTED
+            - APPROVED
+            - REJECTED
+            - COMPLETED
+            - DECLINED
+          type: string
+        updatedAt:
+          description: Last update timestamp
+          example: "2023-11-21T02:00:54.465Z"
+          format: date-time
+          type: string
+        useRefunds:
+          description: Whether to fulfill the amount by first refunding captured payments (starting with the oldest within last 180 days) and then pushing any remaining amount to the card
+          type: boolean
+      required:
+        - id
+        - externalId
+        - card
+        - currency
+        - amount
+        - useRefunds
+        - status
+        - createdAt
+        - updatedAt
       type: object
     RefundCreateData:
       additionalProperties: false
