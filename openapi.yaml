@@ -2807,15 +2807,6 @@ components:
         - amount
         - status
       type: object
-    TokenPaymentCallbackData:
-      additionalProperties: false
-      properties:
-        paymentToken:
-          description: Stringified wallet payment token
-          type: string
-      required:
-        - paymentToken
-      type: object
     Webhook:
       additionalProperties: false
       properties:
