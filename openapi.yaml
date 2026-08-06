@@ -533,7 +533,7 @@ paths:
         - Payment
   /payment/initialize:
     post:
-      description: Initializes a payment
+      description: Initialize a payment
       operationId: initialize-payment
       requestBody:
         content:
@@ -554,7 +554,7 @@ paths:
           description: externalId already used by this merchant with a different payload
         "422":
           description: Validation error
-      summary: Initialize a payment
+      summary: Initialize payment
       tags:
         - Payment
   /payment/ptc:
@@ -660,7 +660,7 @@ paths:
         - Payment
   /push-to-card/initialize:
     post:
-      description: Initializes a push-to-card payment
+      description: Initialize a push-to-card payment
       operationId: initialize-push-to-card-payment
       requestBody:
         content:
@@ -679,7 +679,7 @@ paths:
           description: OK
         "422":
           description: Push-to-card payment declined
-      summary: Initialize a push-to-card payment
+      summary: Initialize push-to-card payment
       tags:
         - Push to Card
   /push-to-card/payment:
