@@ -507,6 +507,58 @@ paths:
       summary: Initialize a crypto payment
       tags:
         - Crypto Payment
+  /payment/crypto/initialize:
+    post:
+      description: Initialize a crypto payment
+      operationId: initialize-payment-crypto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/PaymentInitializeData'
+              description: Payment initialize data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInitializeResponse'
+          description: OK
+        "409":
+          description: Duplicate externalId conflicts with existing payment
+        "422":
+          description: Payment declined
+      summary: Initialize crypto payment
+      tags:
+        - Payment
+  /payment/fiat/initialize:
+    post:
+      description: Initialize a fiat payment
+      operationId: initialize-payment-fiat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/PaymentInitializeData'
+              description: Payment initialize data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInitializeResponse'
+          description: OK
+        "409":
+          description: Duplicate externalId conflicts with existing payment
+        "422":
+          description: Payment declined
+      summary: Initialize fiat payment
+      tags:
+        - Payment
   /payment/google-pay:
     post:
       description: Requests a new Google Pay payment
@@ -529,32 +581,6 @@ paths:
         "422":
           description: Payment declined
       summary: Create Google Pay payment
-      tags:
-        - Payment
-  /payment/initialize:
-    post:
-      description: Initialize a payment
-      operationId: initialize-payment
-      requestBody:
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: '#/components/schemas/PaymentInitializeData'
-              description: Payment initialize data
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaymentInitializeResponse'
-          description: OK
-        "409":
-          description: Duplicate externalId conflicts with existing payment
-        "422":
-          description: Payment declined
-      summary: Initialize payment
       tags:
         - Payment
   /payment/ptc:
