@@ -551,9 +551,9 @@ paths:
                 $ref: '#/components/schemas/PaymentInitializeResponse'
           description: OK
         "409":
-          description: externalId already used by this merchant with a different payload
+          description: Duplicate externalId conflicts with existing payment
         "422":
-          description: Validation error
+          description: Payment declined
       summary: Initialize payment
       tags:
         - Payment
@@ -1215,11 +1215,6 @@ components:
           type: string
         amount:
           description: Card payment amount
-          example: 12.34
-          format: decimal
-          type: number
-        amountRefunded:
-          description: Card payment amount that was refunded or charged back
           example: 12.34
           format: decimal
           type: number
@@ -2265,8 +2260,13 @@ components:
           example: 12.34
           format: decimal
           type: number
+        amountRefunded:
+          description: Payment amount that was refunded or charged back
+          example: 12.34
+          format: decimal
+          type: number
         attempts:
-          description: All attempts, across every method, oldest first
+          description: Attempts across every method, newest first
           items:
             $ref: '#/components/schemas/PaymentAttempt'
           type: array
