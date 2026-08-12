@@ -2292,7 +2292,7 @@ components:
           format: decimal
           type: number
         attempts:
-          description: Attempts across every method, newest first
+          description: Attempts across every method, oldest first
           items:
             $ref: '#/components/schemas/PaymentAttempt'
           type: array
