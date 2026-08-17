@@ -1,23 +1,28 @@
 # Crypto Payments
 
-Crypto Payments are the **new standard way to accept card payments** on the platform. Instead of collecting card data yourself and POSTing it to the API, you initiate a payment server-to-server and redirect your customer to a **Hosted Payments Page (HPP)** on the dedicated Kumaa Crypto domain (`topup.kumaacrypto.com`), where the customer completes the payment and funds your merchant crypto wallet.
+Crypto Payments are the **standard way to accept payments** on the platform. You initialize a payment server-to-server and redirect your customer to a **Hosted Payments Page (HPP)** on the dedicated Kumaa Crypto domain (`topup.kumaacrypto.com`), where the customer completes the payment and funds your merchant crypto wallet.
 
-Because your systems no longer collect, transmit, or store card data, your **PCI DSS exposure is significantly reduced** — cardholder data is entered exclusively on the hosted payments page and never reaches your servers.
+Because your systems never collect, transmit, or store card data, your **PCI DSS exposure is significantly reduced** — cardholder data is entered exclusively on the hosted payments page and never reaches your servers.
 
-> **Important — migration notice:** The direct one-step card payment API ([`POST /payment`](card-payments.md#create-a-payment)) is being phased out and will no longer be available to merchants. All merchants must migrate to the two-step Crypto Payment flow described on this page.
+> **Important — current endpoint:** The endpoint for this flow is [`POST /payment/crypto/initialize`](#step-1--initialize-a-crypto-payment). Two earlier generations are **deprecated** and must not be used for new integrations:
+>
+> - `POST /payment` — the direct one-step card payment API (you collected card data yourself). See [Card Payments](card-payments.md).
+> - `POST /payment/crypto` — the first-generation crypto initiate endpoint. It behaves like `POST /payment/crypto/initialize` but does not require the customer name fields and returns the legacy payment shape. Migrate by switching the path, adding `customerFirstName` / `customerLastName`, and reading the payment back via [`GET /payment/record/{id}`](#payment-records-and-attempts).
 
 ## What Changes for You
 
 | Before (direct API)                                  | Now (Crypto Payments)                                            |
 |------------------------------------------------------|------------------------------------------------------------------|
 | You collect card data and send it to `POST /payment` | You never touch card data — the customer enters it on the HPP    |
+| One endpoint per payment method                      | One initialization; payment methods are offered on the hosted page |
 | Single-step: payment only                            | Two-step: card payment, then wallet transfer to your merchant wallet |
 | `successUrl` / `failureUrl` optional                 | `successUrl` / `failureUrl` required                             |
 | You redirect the customer only for 3DS               | You always redirect the customer to the HPP                      |
 | Settlement based on the payment amount               | Settlement based on `walletTransferAmount`                       |
-| `CARD_PAYMENT` webhook                               | `CARD_PAYMENT` webhook **plus** new `WALLET_TRANSFER` webhook    |
+| `CARD_PAYMENT` webhook                               | `CARD_PAYMENT` webhook **plus** `WALLET_TRANSFER` webhook        |
+| Payment status via `GET /payment/{id}`               | Payment record with per-method attempts via `GET /payment/record/{id}` |
 
-Card whitelisting works exactly as it does today — if it is enabled on your account, cards must still be whitelisted before they can be used (see [Card Whitelisting](#card-whitelisting) below).
+Card whitelisting works exactly as it does today — cards must be whitelisted before they can be used (see [Card Whitelisting](#card-whitelisting) below).
 
 ## How It Works
 
@@ -30,11 +35,11 @@ sequenceDiagram
     participant HPP as Hosted Payments Page<br/>(topup.kumaacrypto.com)
     participant C as Customer
 
-    M->>API: POST /payment/crypto (externalId, customerEmail, amount, currency, successUrl, failureUrl)
+    M->>API: POST /payment/crypto/initialize (externalId, customer, amount, currency, successUrl, failureUrl)
     API-->>M: 200 status=INITIALIZED, actionUrl (valid 15 min)
     M->>C: Redirect customer to actionUrl
     C->>HPP: Open hosted payments page
-    Note over HPP: Email, amount and currency<br/>are pre-filled and read-only
+    Note over HPP: Name, email, amount and currency<br/>are pre-filled and read-only
     C->>HPP: Enter card details and billing address
     HPP->>API: Submit payment (token-authenticated)
     alt 3DS required
@@ -45,24 +50,26 @@ sequenceDiagram
     C->>HPP: Confirm transfer to merchant wallet (default: full amount)
     API-->>M: Webhook WALLET_TRANSFER (top-up intent captured)
     HPP->>C: Redirect to your successUrl / failureUrl
-    M->>API: GET /payment/{id} → walletTransferAmount
+    M->>API: GET /payment/record/{id} → walletTransferAmount
 ```
 
 Your server only ever talks to the Merchants API with your server-to-server (S2S) credentials. The customer's browser only ever talks to the hosted payments page, authenticated by a short-lived token embedded in the URL.
 
-> **Warning:** Your S2S access token must **never** be shared with customers or exposed in any browser-accessible context (including the hosted page redirect). Only the `actionUrl` returned by the initiate call may be handed to the customer's browser.
+> **Warning:** Your S2S access token must **never** be shared with customers or exposed in any browser-accessible context (including the hosted page redirect). Only the `actionUrl` returned by the initialize call may be handed to the customer's browser.
 
-## Step 1 — Initiate a Crypto Payment
+## Step 1 — Initialize a Crypto Payment
 
 Create the payment from your backend using your Bearer token (see [Authentication](authentication.md)):
 
 ```bash
-curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/crypto \
+curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/crypto/initialize \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "externalId": "order-001",
     "customerEmail": "jane@example.com",
+    "customerFirstName": "Jane",
+    "customerLastName": "Doe",
     "currency": "EUR",
     "amount": 29.99,
     "successUrl": "https://your-shop.com/checkout/success",
@@ -72,18 +79,20 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/crypt
 
 ### Request Fields
 
-| Field           | Type   | Required | Description                                                                  |
-|-----------------|--------|----------|------------------------------------------------------------------------------|
-| `externalId`    | string | Yes      | Your unique identifier ([details](idempotency.md))                           |
-| `customerEmail` | string | Yes      | Customer email — identifies the customer's crypto wallet (see [Step 3](#step-3--wallet-top-up)) |
-| `currency`      | string | Yes      | ISO 4217 currency code — see [Supported Currencies](#supported-currencies)   |
-| `amount`        | number | Yes      | Amount to charge (minimum `0.01`)                                            |
-| `successUrl`    | string | Yes      | Where the customer is redirected after a successful payment                  |
-| `failureUrl`    | string | Yes      | Where the customer is redirected after a failed payment                      |
-| `metadata`      | string | No       | Free-form metadata for your own reference                                    |
-| `customerIp`    | string | No       | Customer's IP address                                                        |
+| Field               | Type   | Required | Description                                                                  |
+|---------------------|--------|----------|------------------------------------------------------------------------------|
+| `externalId`        | string | Yes      | Your unique identifier ([details](idempotency.md))                           |
+| `customerEmail`     | string | Yes      | Customer email — identifies the customer's crypto wallet (see [Step 3](#step-3--wallet-top-up)) |
+| `customerFirstName` | string | Yes      | Customer first name                                                          |
+| `customerLastName`  | string | Yes      | Customer last name                                                           |
+| `currency`          | string | Yes      | ISO 4217 currency code — see [Supported Currencies](#supported-currencies)   |
+| `amount`            | number | Yes      | Amount to charge (minimum `0.01`, max 2 decimal places)                      |
+| `successUrl`        | string | Yes      | Where the customer is redirected after a successful payment                  |
+| `failureUrl`        | string | Yes      | Where the customer is redirected after a failed payment                      |
+| `metadata`          | string | No       | Free-form metadata for your own reference                                    |
+| `customerIp`        | string | No       | Customer's IP address                                                        |
 
-The `customerEmail`, `amount` and `currency` are shown to the customer on the hosted page but are **not editable** there. The customer cannot change what you charge.
+The customer's name, email, amount and currency are shown on the hosted page but are **not editable** there. The customer cannot change what you charge.
 
 The `successUrl` and `failureUrl` are not opened directly after the card payment — the platform completes the wallet top-up step first, then redirects the customer to the appropriate URL at the end of the flow.
 
@@ -100,7 +109,7 @@ Each supported fiat currency is backed by a corresponding token in the crypto wa
 | `AUD` | Australian Dollar |
 | `NOK` | Norwegian Krone   |
 
-Requests with any other currency code are rejected with `422 Unprocessable Entity`.
+Requests with any other currency code are rejected with `400 Bad Request`.
 
 ### Response
 
@@ -109,7 +118,7 @@ Requests with any other currency code are rejected with `422 Unprocessable Entit
   "id": "pay_550e8400-e29b-41d4-a716-446655440000",
   "externalId": "order-001",
   "status": "INITIALIZED",
-  "actionUrl": "https://sandbox-topup.nonprod.kumaacrypto.com/cryptopublic/page/eyJhbGciOi..."
+  "actionUrl": "https://sandbox-topup.nonprod.kumaacrypto.com/cryptopublic/payments/page/eyJhbGciOi..."
 }
 ```
 
@@ -119,61 +128,108 @@ Requests with any other currency code are rejected with `422 Unprocessable Entit
 | `externalId` | string | Your provided identifier                                               |
 | `status`     | string | Initial payment status (always `INITIALIZED`)                          |
 | `actionUrl`  | string | Hosted payments page URL — redirect your customer here                 |
-| `message`    | string | Decline reason, if applicable                                          |
 
 ### Status Codes
 
 | Code | Meaning                                                     |
 |------|-------------------------------------------------------------|
 | 200  | Payment initialized successfully                            |
+| 400  | Invalid request (e.g. unsupported currency, malformed field) |
 | 409  | Duplicate `externalId` (see [Idempotency](idempotency.md))  |
-| 422  | Payment declined (e.g. unsupported currency)                |
+| 422  | Payment cannot be accepted (e.g. merchant account not active) |
 
 ### The `actionUrl`
 
 - It points to the dedicated Kumaa Crypto payments domain (`topup.kumaacrypto.com` subdomains — e.g. `sandbox-topup.nonprod.kumaacrypto.com` in sandbox), **not** to your API domain.
 - It embeds a signed token that ties the page to this specific payment and your merchant account. Treat the URL as **opaque** — do not parse, modify, or construct it yourself.
-- The token is valid for **15 minutes**. Shortly after it expires, a payment that is still `INITIALIZED` is automatically **declined** (see [Payment Lifecycle](#payment-lifecycle)). If the customer did not complete the payment in time, initiate a new payment with a new `externalId`.
+- The token is valid for **15 minutes**. Shortly after it expires, a payment that is still `INITIALIZED` is automatically **declined** (see [Payment Lifecycle](#payment-lifecycle)). If the customer did not complete the payment in time, initialize a new payment with a new `externalId`.
 - The URL is single-purpose: it can only be used to complete this one payment.
 
 ## Step 2 — Redirect the Customer
 
 Redirect the customer's browser to the `actionUrl`. On the hosted page the customer:
 
-1. Sees the pre-filled, read-only email, amount and currency.
-2. Enters the same details required for a regular card payment: card number, cardholder name, expiry, CVC, first/last name, and billing address.
+1. Sees the pre-filled, read-only name, email, amount and currency.
+2. Enters the same details required for a regular card payment: card number, cardholder name, expiry, CVC, and billing address.
 3. Completes 3D Secure if the issuer requires it — the hosted page handles the redirect to the 3DS vendor and back. You do not need to do anything.
 
-The hosted page polls the payment status and shows the outcome to the customer. Meanwhile, your server is notified via the [`CARD_PAYMENT` webhook](webhooks.md) exactly as before: the payment transitions through the familiar lifecycle and ends in `CAPTURED` or `DECLINED`.
+The hosted page polls the payment status and shows the outcome to the customer. Meanwhile, your server is notified via the [`CARD_PAYMENT` webhook](webhooks.md): the card attempt transitions through the familiar card lifecycle and ends in `CAPTURED` or `DECLINED`.
 
 ### Payment Lifecycle
 
+A crypto payment is a **payment record** with its own top-level lifecycle. Each payment method the customer attempts on the hosted page (currently card) is recorded as an **attempt** with its own method-specific sub-lifecycle.
+
 ```mermaid
 stateDiagram-v2
-    [*] --> INITIALIZED: POST /payment/crypto
-    INITIALIZED --> REQUESTED: customer submits card on HPP
+    [*] --> INITIALIZED: POST /payment/crypto/initialize
+    INITIALIZED --> PENDING: customer submits a payment attempt on the HPP
     INITIALIZED --> DECLINED: token expired (payment abandoned)
-    REQUESTED --> AUTH_REQUESTED: 3DS challenge required
-    REQUESTED --> AUTHORIZED: no 3DS, authorized
-    REQUESTED --> DECLINED: validation failed
-    AUTH_REQUESTED --> AUTHORIZED: 3DS approved
-    AUTH_REQUESTED --> DECLINED: 3DS failed / timed out
-    AUTHORIZED --> CAPTURED
-    AUTHORIZED --> DECLINED
-    CAPTURED --> [*]
+    PENDING --> COMPLETED: attempt succeeded
+    PENDING --> DECLINED: attempt failed
+    COMPLETED --> [*]
     DECLINED --> [*]
 ```
 
-| Status           | Description                                                                   |
-|------------------|-------------------------------------------------------------------------------|
-| `INITIALIZED`    | Payment created via `POST /payment/crypto`, waiting for the customer on the HPP. If the customer never submits the payment, it is automatically declined shortly after the 15-minute token expires — the `CARD_PAYMENT` webhook reports `status: DECLINED` with `responseCode: INITIALIZED_PAYMENT_EXPIRED` |
-| `REQUESTED`      | Customer submitted card details, payment is being processed                  |
-| `AUTH_REQUESTED` | Customer must complete a 3DS challenge (handled entirely by the HPP)          |
-| `AUTHORIZED`     | Card authorized, funds reserved                                               |
-| `CAPTURED`       | Funds captured from the card (terminal, success)                              |
-| `DECLINED`       | Payment declined (terminal) — `responseCode` carries the reason, including [3DS failures](card-payments.md#3ds-failure-outcomes) |
+| Status        | Description                                                                   |
+|---------------|-------------------------------------------------------------------------------|
+| `INITIALIZED` | Payment created via `POST /payment/crypto/initialize`, waiting for the customer on the HPP. If the customer never submits the payment, it is automatically declined shortly after the 15-minute token expires — the `CARD_PAYMENT` webhook reports `status: DECLINED` with `responseCode: INITIALIZED_PAYMENT_EXPIRED` |
+| `PENDING`     | The customer submitted a payment attempt which is being processed             |
+| `COMPLETED`   | A payment attempt succeeded (terminal, success)                               |
+| `DECLINED`    | The payment failed (terminal) — `responseCode` carries the reason, including [3DS failures](card-payments.md#3ds-failure-outcomes) |
 
-You can fetch the payment at any time with [`GET /payment/{id}`](card-payments.md#get-payment-details) using your S2S token.
+A **card attempt** inside the record moves through the card sub-lifecycle you may know from the direct API: `REQUESTED → AUTH_REQUESTED (3DS) → AUTHORIZED → CAPTURED`, or `DECLINED` at any of those steps. The attempt-level status and `responseCode` are visible in the `attempts` array of the payment record (see below).
+
+## Payment Records and Attempts
+
+You can fetch the payment at any time with `GET /payment/record/{id}` using your S2S token:
+
+```bash
+curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/record/pay_550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+The response contains the top-level record (status, amounts, redirect URLs, wallet-transfer fields) plus an `attempts` array — one entry per payment method attempt the customer made, **oldest first**:
+
+```json
+{
+  "id": "pay_550e8400-e29b-41d4-a716-446655440000",
+  "type": "CHECKOUT",
+  "externalId": "order-001",
+  "status": "COMPLETED",
+  "customerEmail": "jane@example.com",
+  "customerFirstName": "Jane",
+  "customerLastName": "Doe",
+  "currency": "EUR",
+  "amount": 29.99,
+  "successUrl": "https://your-shop.com/checkout/success",
+  "failureUrl": "https://your-shop.com/checkout/failure",
+  "actionUrl": "https://sandbox-topup.nonprod.kumaacrypto.com/cryptopublic/payments/page/eyJhbGciOi...",
+  "attempts": [
+    {
+      "method": "CARD",
+      "card": {
+        "id": "crd_7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "status": "CAPTURED",
+        "amount": 29.99,
+        "currency": "EUR",
+        "card": { "binCode": "411111", "last4": "1111", "issuer": "VISA" },
+        "createdAt": "2026-08-17T10:05:00Z",
+        "updatedAt": "2026-08-17T10:06:10Z"
+      }
+    }
+  ],
+  "walletTransferAmount": 29.99,
+  "walletTransferCurrency": "EUR",
+  "walletTransferStatus": "COMPLETED",
+  "createdAt": "2026-08-17T10:04:00Z",
+  "updatedAt": "2026-08-17T10:07:00Z",
+  "finishedAt": "2026-08-17T10:06:10Z"
+}
+```
+
+Each attempt carries a `method` (`CARD` or `BANK_TRANSFER`) and the matching sub-object (`card` or `bankTransfer`) with the attempt's own ID, status, `responseCode`, and timestamps. This is how the platform supports offering several payment methods for a single initialized payment: a failed attempt with one method can be followed by another attempt, and every attempt stays visible in the record.
+
+`GET /payment/record` lists your payment records with the same pagination and `externalId` filtering as the other list endpoints.
 
 ## Step 3 — Wallet Top-Up
 
@@ -185,9 +241,9 @@ After a successful card payment, the hosted page guides the customer through tra
 - The customer confirms the transfer to your merchant wallet. The **default is the full available amount** in the payment's currency (current payment plus any leftover balance in that currency); the customer may choose to transfer less. Balances in other currencies are displayed but cannot be transferred in this flow.
 - Blockchain transfers are executed in grouped batches on a schedule (every 15 minutes), so the on-chain top-up may complete several minutes after the customer confirms it.
 
-> **Note:** The wallet top-up never affects the card payment. A `CAPTURED` payment stays captured even if the blockchain transfer is delayed or fails — the platform will resolve the transfer separately.
+> **Note:** The wallet top-up never affects the card payment. A captured payment stays captured even if the blockchain transfer is delayed or fails — the platform will resolve the transfer separately.
 
-> **Note:** If the customer never confirms the transfer, the top-up step expires shortly after the 15-minute session token runs out. The card payment stays `CAPTURED`, and a `WALLET_TRANSFER` webhook with `status: EXPIRED` is sent (see [Webhooks](#webhooks) below).
+> **Note:** If the customer never confirms the transfer, the top-up step expires shortly after the 15-minute session token runs out. The card payment stays captured, and a `WALLET_TRANSFER` webhook with `status: EXPIRED` is sent (see [Webhooks](#webhooks) below).
 
 ### Merchant Wallet
 
@@ -199,8 +255,8 @@ You should configure **two** webhooks (one per event type — see [Webhooks](web
 
 | Event Type        | Triggered When                                                                                  |
 |-------------------|--------------------------------------------------------------------------------------------------|
-| `CARD_PAYMENT`    | The card payment status changes (`REQUESTED`, `AUTHORIZED`, `CAPTURED`, `DECLINED`, …) — unchanged from the previous integration |
-| `WALLET_TRANSFER` | **New.** The customer's top-up to your merchant wallet has been captured (`status: COMPLETED`, sent at intent capture; the on-chain transfer may settle shortly after), **or** the top-up window expired without the customer confirming a transfer (`status: EXPIRED`) |
+| `CARD_PAYMENT`    | The card payment status changes (`AUTH_REQUESTED`, `CAPTURED`, `DECLINED`, …) — unchanged from the previous integration |
+| `WALLET_TRANSFER` | The customer's top-up to your merchant wallet has been captured (`status: COMPLETED`, sent at intent capture; the on-chain transfer may settle shortly after), **or** the top-up window expired without the customer confirming a transfer (`status: EXPIRED`) |
 
 Create the new webhook:
 
@@ -227,28 +283,24 @@ The `WALLET_TRANSFER` notification payload follows the same shape as other webho
 }
 ```
 
-The `status` field is `COMPLETED` when the top-up intent was captured, or `EXPIRED` when the customer completed the card payment but never confirmed a transfer before the session expired. When you receive a `COMPLETED` notification, fetch the payment to learn the transferred amount (see below).
+The `status` field is `COMPLETED` when the top-up intent was captured, or `EXPIRED` when the customer completed the card payment but never confirmed a transfer before the session expired. When you receive a `COMPLETED` notification, fetch the payment record to learn the transferred amount (see below).
 
 ## Tracking the Transferred Amount
 
-`GET /payment/{id}` now includes optional wallet-transfer fields on every payment:
+`GET /payment/record/{id}` includes optional wallet-transfer fields on every payment record:
 
 | Field                     | Type   | Description                                                                 |
 |---------------------------|--------|------------------------------------------------------------------------------|
-| `walletTransferAmount`    | number | Amount transferred to your merchant wallet for this payment (in the payment currency). Absent until a transfer has been captured. |
+| `walletTransferAmount`    | number | Amount transferred to your merchant wallet for this payment. Absent until a transfer has been captured. |
+| `walletTransferCurrency`  | string | Currency of the wallet transfer amount.                                     |
 | `walletTransferStatus`    | string | `COMPLETED` — the top-up was captured; `EXPIRED` — the customer never confirmed a transfer. Absent while the transfer is still possible. |
 | `walletTransferTxHashUrl` | string | Link to the on-chain transaction for the customer-to-merchant transfer. Absent until the blockchain transfer has been executed. |
-
-```bash
-curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_550e8400-e29b-41d4-a716-446655440000 \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
 
 > **Important — settlement:** `walletTransferAmount` may be **less than the payment amount** (the customer chooses how much to transfer) or, for returning customers with leftover balances, up to the full available amount in that currency. **Settlement is based on `walletTransferAmount`, not on the payment amount.** Reconcile against this field, and surface it in your own back office. The same value is shown per payment in the Merchant Backoffice Portal.
 
 ## Card Whitelisting
 
-Card whitelisting still applies to Crypto Payments, exactly as it does for the direct card API. If your merchant account has card whitelisting enabled, each card must be registered via the [whitelist API](blocklist-and-whitelist.md#card-whitelist) and clear the ~72-hour cooldown period **before** it can be used to pay.
+Card whitelisting is **mandatory**: each card must be registered via the [whitelist API](blocklist-and-whitelist.md#card-whitelist) and clear the ~72-hour cooldown period **before** it can be used to pay. (Platform administration can exempt individual merchant accounts from this requirement — see [Blocklist and Whitelist](blocklist-and-whitelist.md#card-whitelist).)
 
 Because the customer enters their card on the hosted payments page rather than through your systems, you must whitelist the card ahead of time (server-to-server, using your S2S token) so that the card the customer submits on the HPP is already approved. A payment attempted on the HPP with a non-whitelisted or cooldown-active card is **declined** — the `CARD_PAYMENT` webhook reports `status=DECLINED` and the customer is redirected to your `failureUrl`.
 
@@ -256,16 +308,16 @@ The [Blocklist](blocklist-and-whitelist.md) (blocking customers) is unaffected.
 
 ## Error Handling
 
-All errors follow the standard [Problem Details format](error-handling.md). Specific to this flow:
+All errors follow the standard [error format](error-handling.md). Specific to this flow:
 
 | Situation                                  | What happens                                                                          |
 |--------------------------------------------|----------------------------------------------------------------------------------------|
-| `actionUrl` token expired (after 15 min)   | The hosted page redirects the customer to a session-expired page. Initiate a new payment with a new `externalId`. |
-| Duplicate `externalId`                     | `409 Conflict` on `POST /payment/crypto` — see [Idempotency](idempotency.md)           |
+| `actionUrl` token expired (after 15 min)   | The hosted page redirects the customer to a session-expired page. Initialize a new payment with a new `externalId`. |
+| Duplicate `externalId`                     | `409 Conflict` on `POST /payment/crypto/initialize` — see [Idempotency](idempotency.md) |
 | Payment declined                           | `CARD_PAYMENT` webhook with `status=DECLINED` and a `responseCode`; the customer is redirected to your `failureUrl` |
 | Customer abandons the hosted page          | Shortly after the token expires, the payment is declined automatically — `CARD_PAYMENT` webhook with `status=DECLINED` and `responseCode=INITIALIZED_PAYMENT_EXPIRED`; no funds are moved |
-| Customer opens the page from a restricted location | The customer is redirected to a blocked-location page and the payment is declined — `CARD_PAYMENT` webhook with `status=DECLINED` and `responseCode=BLOCKED` |
-| Customer pays but never confirms the wallet top-up | The card payment stays `CAPTURED`; a `WALLET_TRANSFER` webhook with `status=EXPIRED` is sent after the session expires |
+| Customer opens the page from a restricted location | The customer is redirected to a blocked-location page and the payment is declined — `CARD_PAYMENT` webhook with `status=DECLINED` and a `BLOCKED_LOCATION*` `responseCode` |
+| Customer pays but never confirms the wallet top-up | The card payment stays captured; a `WALLET_TRANSFER` webhook with `status=EXPIRED` is sent after the session expires |
 
 ## Testing
 
@@ -275,18 +327,19 @@ The sandbox hosted page accepts the same [test cards](card-payments.md#testing) 
 
 Suggested end-to-end test:
 
-1. `POST /payment/crypto` with a unique `externalId` and a synthetic `customerEmail`.
+1. `POST /payment/crypto/initialize` with a unique `externalId` and a synthetic customer name and `customerEmail`.
 2. Open the returned `actionUrl` in a browser.
 3. Pay with an approved test card (e.g. `4111111111111111`, `01/2035`, `Jane Smith`) — or a 3DS card to exercise the challenge flow.
 4. Confirm the wallet transfer on the page.
-5. Verify you received the `CARD_PAYMENT` (`CAPTURED`) and `WALLET_TRANSFER` webhooks, and that `GET /payment/{id}` shows `walletTransferAmount`.
+5. Verify you received the `CARD_PAYMENT` (`CAPTURED`) and `WALLET_TRANSFER` webhooks, and that `GET /payment/record/{id}` shows `walletTransferAmount`.
 
 ## Migration Checklist
 
-1. **Replace** `POST /payment` calls with `POST /payment/crypto` — drop all `card` and `customer` fields except the customer email, and always provide `successUrl` and `failureUrl`.
-2. **Remove card collection** from your checkout entirely; redirect the customer to the `actionUrl` instead (within 15 minutes of initiating).
+1. **Replace** `POST /payment` (or first-generation `POST /payment/crypto`) calls with `POST /payment/crypto/initialize` — drop all `card` fields, provide `customerEmail`, `customerFirstName` and `customerLastName`, and always provide `successUrl` and `failureUrl`.
+2. **Remove card collection** from your checkout entirely; redirect the customer to the `actionUrl` instead (within 15 minutes of initializing).
 3. **Keep** your `CARD_PAYMENT` webhook — its payloads are unchanged.
 4. **Add** a `WALLET_TRANSFER` webhook and use it to trigger reconciliation.
-5. **Base settlement and reconciliation on `walletTransferAmount`** from `GET /payment/{id}`, not on the payment amount.
-6. **Keep your card whitelisting** logic if it is enabled on your account — cards must still be whitelisted (and clear the cooldown) before the customer pays on the HPP. See [Card Whitelisting](#card-whitelisting).
-7. Verify the full flow in sandbox using the checklist in [Testing](#testing) before going live.
+5. **Switch reads** to `GET /payment/record/{id}` / `GET /payment/record` for payments created via the initialize endpoint.
+6. **Base settlement and reconciliation on `walletTransferAmount`**, not on the payment amount.
+7. **Keep your card whitelisting** integration — cards must still be whitelisted (and clear the cooldown) before the customer pays on the HPP. See [Card Whitelisting](#card-whitelisting).
+8. Verify the full flow in sandbox using the checklist in [Testing](#testing) before going live.

@@ -1,6 +1,6 @@
 # Getting Started
 
-The Platform Merchants API lets you accept card payments, process refunds, initiate open banking transfers, and manage webhooks — all through a single REST API.
+The Platform Merchants API lets you accept payments through a hosted payments page, process refunds, initiate open banking transfers, and manage webhooks — all through a single REST API.
 
 ## Base URL
 
@@ -60,40 +60,27 @@ Response:
 
 See [Authentication](authentication.md) for full details on token management.
 
-### 2. Whitelist cards (if required)
+### 2. Whitelist the customer's card
 
-Depending on your merchant account configuration, you may need to whitelist cards before processing payments. If card whitelisting is enabled on your account, register each card and allow approximately 72 hours for the cooldown period to expire. See [Card Whitelist](blocklist-and-whitelist.md#card-whitelist) for details.
+Card whitelisting is **mandatory**: register each card and allow approximately 72 hours for the cooldown period to expire before it can be used to pay. See [Card Whitelist](blocklist-and-whitelist.md#card-whitelist) for details.
 
-### 3. Create a payment
+### 3. Initialize a payment
 
-Use the access token to create a card payment.
+Use the access token to initialize a payment. You never collect card data yourself — the response contains an `actionUrl` for the hosted payments page where your customer completes the payment.
 
 ```bash
-curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
+curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/crypto/initialize \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "externalId": "order-001",
+    "customerEmail": "jane@example.com",
+    "customerFirstName": "Jane",
+    "customerLastName": "Doe",
     "currency": "EUR",
     "amount": 29.99,
-    "card": {
-      "number": "4111111111111111",
-      "name": "Jane Doe",
-      "expiry": { "month": 12, "year": 2027 },
-      "cvc": "123"
-    },
-    "customer": {
-      "email": "jane@example.com",
-      "firstName": "Jane",
-      "lastName": "Doe",
-      "billingAddress": {
-        "address1": "123 Main St",
-        "city": "Berlin",
-        "country": "DEU",
-        "state": "BE",
-        "zip": "10115"
-      }
-    }
+    "successUrl": "https://your-shop.com/checkout/success",
+    "failureUrl": "https://your-shop.com/checkout/failure"
   }'
 ```
 
@@ -103,22 +90,27 @@ Response:
 {
   "id": "pay_abc123",
   "externalId": "order-001",
-  "status": "AUTH_REQUESTED"
+  "status": "INITIALIZED",
+  "actionUrl": "https://sandbox-topup.nonprod.kumaacrypto.com/cryptopublic/payments/page/eyJhbGciOi..."
 }
 ```
 
-If 3D Secure is required, the response includes an `actionUrl`. Redirect the customer to that URL to complete authentication.
+Redirect your customer to the `actionUrl` (valid for 15 minutes). The full flow — including the wallet top-up step — is described in [Crypto Payments](crypto-payments.md).
 
-### 4. Check payment status
+> **Deprecated:** the direct card endpoints (`POST /payment`, `POST /payment/batch`, `POST /payment/crypto`, `POST /payment/google-pay`, `POST /payment/apple-pay`, `POST /payment/ptc`) are being phased out. New integrations must use the initialize flow above.
+
+### 4. Check the payment
 
 ```bash
-curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_abc123 \
+curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/record/pay_abc123 \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-### 5. Set up a webhook (optional)
+The payment record includes its status, the per-method `attempts` the customer made, and the wallet-transfer fields used for settlement — see [Payment Records and Attempts](crypto-payments.md#payment-records-and-attempts).
 
-Receive real-time notifications when payment status changes.
+### 5. Set up webhooks
+
+Receive real-time notifications when the payment and the wallet top-up progress.
 
 ```bash
 curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/webhooks \
@@ -130,6 +122,8 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/webhooks \
     "enabled": true
   }'
 ```
+
+Create a second webhook with `eventType: WALLET_TRANSFER` to be notified when the customer's wallet top-up is captured — settlement is based on it (see [Crypto Payments](crypto-payments.md#webhooks)).
 
 ## Key Concepts
 
@@ -146,26 +140,22 @@ See [Idempotency](idempotency.md) for more details.
 
 ### Payment Lifecycle
 
-A card payment moves through the following states:
+A payment record moves through the following states:
 
 ```
-AUTH_REQUESTED → AUTHORIZED → CAPTURED → COMPLETED
-                                      ↘ DECLINED
+INITIALIZED → PENDING → COMPLETED
+           ↘         ↘ DECLINED
 ```
 
-Additional states: `PENDING`, `PENDING_APPROVAL`, `APPROVED`, `REJECTED`, `TRANSFERRED`.
+Each payment-method attempt within the record (for example the card payment) has its own sub-lifecycle — see [Crypto Payments — Payment Lifecycle](crypto-payments.md#payment-lifecycle). Refunds, open banking transactions, and push-to-card disbursements each have their own state machines, described on their pages.
 
 ### Error Format
 
-All errors follow the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) Problem Details format with content type `application/problem+json`.
+Errors are returned as JSON with a `message` describing the problem; request-validation failures additionally pinpoint the offending fields. See [Error Handling](error-handling.md) for the exact shapes.
 
 ```json
 {
-  "status": 422,
-  "title": "Unprocessable Entity",
-  "detail": "Payment was declined",
-  "type": "https://example.com/errors/payment-declined",
-  "instance": "/payment"
+  "message": "duplicate payment request"
 }
 ```
 
@@ -173,8 +163,8 @@ All errors follow the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) 
 
 - [Authentication](authentication.md) — Token lifecycle, refresh strategy, and IP whitelisting
 - [Idempotency](idempotency.md) — How `externalId` prevents duplicate transactions
-- [Crypto Payments](crypto-payments.md) — The new hosted-page payment flow with merchant wallet top-ups
-- [Card Payments](card-payments.md) — Full payment flows, batch payments, and push-to-card
+- [Crypto Payments](crypto-payments.md) — The hosted-page payment flow with merchant wallet top-ups
+- [Card Payments](card-payments.md) — Payment statuses, deprecated direct endpoints, and test cards
 - [Refunds](refunds.md) — Full and partial refund processing
 - [Open Banking](open-banking.md) — Bank transfer transactions
 - [Webhooks](webhooks.md) — Event notifications setup

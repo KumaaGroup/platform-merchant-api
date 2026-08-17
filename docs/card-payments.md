@@ -1,6 +1,8 @@
 # Card Payments
 
-> **Deprecation notice:** The direct one-step card payment flow described on this page (`POST /payment`, including batch payments) is being phased out and will no longer be available to merchants. New integrations must use [Crypto Payments](crypto-payments.md), and existing merchants must migrate. The information below remains relevant for payment statuses, `GET /payment`, and test cards.
+> **Deprecation notice:** The direct payment endpoints described on this page — `POST /payment`, `POST /payment/batch`, and `POST /payment/ptc` — are **deprecated** and are being phased out. New integrations must use [`POST /payment/crypto/initialize`](crypto-payments.md) (for accepting payments) and [`POST /push-to-card/initialize`](#push-to-card) (for disbursements), and existing merchants must migrate. The information below remains relevant for payment statuses, `GET /payment`, and test cards.
+
+> **Note:** `GET /payment` and `GET /payment/{id}` return payments created through the deprecated direct endpoints. Payments created via [`POST /payment/crypto/initialize`](crypto-payments.md) are read through [`GET /payment/record`](crypto-payments.md#payment-records-and-attempts) instead.
 
 The Platform Merchants API supports single payments, batch payments, and push-to-card disbursements. All card payment endpoints require a Bearer token (see [Authentication](authentication.md)).
 
@@ -44,6 +46,8 @@ sequenceDiagram
 ```
 
 ## Create a Payment
+
+> **Deprecated** — use [`POST /payment/crypto/initialize`](crypto-payments.md#step-1--initialize-a-crypto-payment) instead.
 
 ```bash
 curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
@@ -91,9 +95,8 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
 | `customer.lastName`     | string  | Yes      | Customer last name                                 |
 | `customer.billingAddress` | object | Yes     | Billing address (see below)                        |
 | `customer.phone`        | string  | No       | Phone in E.164 format (e.g. `+49170123456`)        |
-| `customer.ssn`          | string  | No       | Social security number                             |
 | `customerIp`            | string  | No       | Customer's IP address                              |
-| `metadata`              | object  | No       | Key-value pairs for your own reference             |
+| `metadata`              | string  | No       | Free-form metadata for your own reference          |
 | `successUrl`            | string  | No       | Redirect URL after successful 3DS authentication   |
 | `failureUrl`            | string  | No       | Redirect URL after failed 3DS authentication       |
 
@@ -205,6 +208,8 @@ The response includes a `nextCursor` field. Pass it as the `cursor` parameter to
 
 ## Batch Payments
 
+> **Deprecated** — batch creation is part of the direct card API being phased out. Initialize payments individually via [`POST /payment/crypto/initialize`](crypto-payments.md#step-1--initialize-a-crypto-payment) instead.
+
 ```mermaid
 sequenceDiagram
     participant M as Merchant
@@ -264,17 +269,15 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/batch
 
 ## Push-to-Card
 
+> **Deprecated endpoint:** `POST /payment/ptc` is deprecated. Use `POST /push-to-card/initialize` — same request shape — and read disbursements back via `GET /push-to-card/payment` / `GET /push-to-card/payment/{id}`.
+
 ```mermaid
 sequenceDiagram
     participant M as Merchant
     participant API as Merchants API
     participant C as Card
 
-    M->>API: POST /payment/ptc (card, amount, useRefunds)
-    alt useRefunds = true
-        API->>API: Apply available refund balances (last 180 days)
-        Note over API: Remaining amount pushed to card
-    end
+    M->>API: POST /push-to-card/initialize (card, amount)
     API->>API: Platform admin reviews disbursement
     API->>C: Push funds (after approval)
     API-->>M: 200 status=REQUESTED
@@ -286,7 +289,7 @@ Push funds directly to a customer's card. This is useful for disbursements, payo
 > **Note:** Push-to-card disbursements always require platform-administration review before funds are sent. The payment stays in `REQUESTED` until the platform approves or rejects it.
 
 ```bash
-curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/ptc \
+curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/push-to-card/initialize \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -296,10 +299,9 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/ptc \
     "card": {
       "number": "4111111111111111",
       "name": "Jane Doe",
-      "expiry": { "month": 12, "year": 2027 },
-      "cvc": "123"
+      "expiry": { "month": 12, "year": 2027 }
     },
-    "useRefunds": true
+    "useRefunds": false
   }'
 ```
 
@@ -310,11 +312,11 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/ptc \
 | `externalId` | string  | Yes      | Your unique identifier                                   |
 | `currency`   | string  | Yes      | ISO 4217 currency code                                   |
 | `amount`     | number  | Yes      | Amount to push (minimum `0.01`)                          |
-| `card`       | object  | Yes      | Recipient card details                                   |
-| `useRefunds` | boolean | Yes      | Use available refunds from the last 180 days first       |
-| `metadata`   | object  | No       | Key-value pairs for your own reference                   |
+| `card`       | object  | Yes      | Recipient card details (`number`, `name`, `expiry` — no CVC) |
+| `useRefunds` | boolean | Yes      | Must be `false` — see below                              |
+| `metadata`   | string  | No       | Free-form metadata for your own reference                |
 
-When `useRefunds` is `true`, the platform first applies any available refund balances from the last 180 days before pushing the remaining amount to the card.
+> **Note on `useRefunds`:** this flag is reserved for fulfilling the amount from available refund balances before pushing the remainder to the card. It is **not yet supported** — requests with `useRefunds: true` are rejected with `422 Unprocessable Entity`. Always send `false`.
 
 ### Response
 
@@ -322,10 +324,21 @@ When `useRefunds` is `true`, the platform first applies any available refund bal
 {
   "id": "ptc_xyz789",
   "externalId": "payout-001",
-  "status": "REQUESTED",
-  "message": "Push-to-card payment initiated"
+  "status": "REQUESTED"
 }
 ```
+
+### Get and List Disbursements
+
+```bash
+curl https://sandbox-merchants-api.nonprod.paygate.systems/push-to-card/payment/ptc_xyz789 \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+
+curl "https://sandbox-merchants-api.nonprod.paygate.systems/push-to-card/payment?limit=20" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+The list endpoint supports the standard `limit`, `cursor`, and `externalId` query parameters. Each disbursement includes the masked card, amount, `status`, `responseCode` (decline reason, if any), and timestamps.
 
 ### Push-to-Card Lifecycle
 

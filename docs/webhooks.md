@@ -82,7 +82,7 @@ The `status` field in a `CARD_PAYMENT` webhook payload reflects the current stat
 - Card payments and push-to-card — [Payment Lifecycle](card-payments.md#payment-lifecycle), [Push-to-Card Lifecycle](card-payments.md#push-to-card-lifecycle)
 - Refunds — [Refund Lifecycle](refunds.md#refund-lifecycle)
 
-Every webhook status corresponds to a stored record that you can fetch via `GET /payment/{objectId}`. Duplicate-`externalId` submissions never produce a webhook — they are rejected synchronously with `409 Conflict` from the create endpoint (see [Idempotency](idempotency.md)).
+Every webhook status corresponds to a stored record that you can fetch — via `GET /payment/record/{objectId}` for payments created through the initialize flow, or `GET /payment/{objectId}` for payments created through the deprecated direct endpoints. Duplicate-`externalId` submissions never produce a webhook — they are rejected synchronously with `409 Conflict` from the create endpoint (see [Idempotency](idempotency.md)).
 
 ## List Webhooks
 
