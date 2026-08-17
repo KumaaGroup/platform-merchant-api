@@ -1,16 +1,21 @@
-# KumaaGuard Risk Rating
+# KumaaGuard
 
 KumaaGuard is the platform's payment risk-rating service for **partners** — built to guard merchants against **friendly fraud**: a customer buys real goods, then forges "proof" to demand a refund or files a chargeback, and the bank sides with them. The merchant loses the goods, the money, and the dispute fee.
 
 KumaaGuard puts an ML-driven risk check in front of that. Before you submit a payment to your acquirer, you send its details to KumaaGuard and receive a fraud risk score in the same response. You decide whether to proceed, then report what actually happened — captured, declined, and later disputed or refunded if the payment develops. Every reported outcome feeds back into the model, so scoring accuracy improves with use.
 
-> **Note:** This API is for **KumaaGuard partners**, a separate role from merchants. Partner accounts are onboarded by the platform; your API credentials are provided during onboarding.
+> **Note:** This API is for **KumaaGuard partners**, a separate role from merchants. Partner accounts are onboarded by the platform; upon successful onboarding you receive your API credentials by email.
 
-## Base URL
+## Base URLs
 
-| Environment | URL                                  |
-|-------------|--------------------------------------|
-| Production  | `https://api.prod.kumaaguard.com`    |
+| Environment | API                                          | Auth                                          |
+|-------------|----------------------------------------------|-----------------------------------------------|
+| Sandbox     | `https://sandbox-api.nonprod.kumaaguard.com` | `https://sandbox-auth.nonprod.kumaaguard.com` |
+| Production  | `https://api.prod.kumaaguard.com`            | `https://auth.prod.kumaaguard.com`            |
+
+Start in **sandbox**: once your partner account is onboarded there, use the sandbox credentials from your onboarding email to exercise every endpoint on this page against the sandbox API before going live.
+
+> **Warning — Sandbox Data Policy:** as everywhere on the platform, the sandbox is strictly for **synthetic (fictitious) data**. Never send real PII or real card identifiers (even BIN + last4 combinations of real cards) when testing.
 
 ## What You Send — and What You Don't
 
@@ -54,7 +59,17 @@ The flow is synchronous: the risk score is returned directly in the `POST /risk-
 
 ## Authentication
 
-KumaaGuard partners use the same OAuth2 client-credentials flow as described in [Authentication](authentication.md), with credentials issued during partner onboarding. Exchange your `client_id` / `client_secret` for a Bearer token on the KumaaGuard auth host, then send the token in the `Authorization` header of every request.
+KumaaGuard partners use the same OAuth2 client-credentials flow as described in [Authentication](authentication.md), with credentials issued during partner onboarding. Exchange your `client_id` / `client_secret` for a Bearer token on the KumaaGuard auth host for your environment, then send the token in the `Authorization` header of every request:
+
+```bash
+curl -X POST https://sandbox-auth.nonprod.kumaaguard.com/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "grant_type=client_credentials"
+```
+
+Token lifecycle, caching, and refresh strategy are identical to the merchant API — see [Authentication](authentication.md).
 
 ## Request a Risk Score
 
@@ -126,7 +141,7 @@ curl -X POST https://api.prod.kumaaguard.com/risk-score \
 | `riskScoreId` | string | Platform-generated risk score ID — use it to report the outcome    |
 | `riskScore`   | number | Fraud risk score from `0.00` (lowest risk) to `100.00` (highest risk), with two decimal places of precision |
 
-The threshold at which you decline a payment is your decision — start conservatively and calibrate against your own outcome data.
+How you act on the score is your decision — analyze the risk ratings you receive against your own traffic and adjust your thresholds to match your expectations and risk appetite.
 
 ### Status Codes
 
