@@ -85,16 +85,11 @@ curl https://sandbox-merchants-api.nonprod.paygate.systems/blocklist/customers/b
 
 ## Card Whitelist
 
-Depending on your merchant account configuration, payments may be processed in one of two modes:
+Card whitelisting is **mandatory**: only pre-approved cards can be used for payments, and every card must be whitelisted before a payment can be processed with it. (Platform administration can exempt an individual merchant account from this requirement — such exemptions are granted by the platform, not configurable by merchants.)
 
-- **Trusted mode** — all cards are accepted without prior registration. This is the default for most accounts.
-- **Whitelist mode** — only pre-approved cards can be used for payments. Every card must be whitelisted before a payment can be processed with it.
+Call the card whitelist API for each card you intend to use for payments. An accepted whitelisting request triggers a **cooldown period of approximately 72 hours** before the card becomes active and can be used for an actual payment. During the cooldown, the `cooldownExpiresAt` field on the whitelist entry indicates when the card will be ready.
 
-If your account requires card whitelisting, you must call the card whitelist API for each card you intend to use for payments. An accepted whitelisting request triggers a **cooldown period of approximately 72 hours** before the card becomes active and can be used for an actual payment. During the cooldown, the `cooldownExpiresAt` field on the whitelist entry indicates when the card will be ready.
-
-> **Important:** Attempting a payment with a card that has not been whitelisted (or is still in cooldown) will result in a declined payment.
-
-You can check whether your account requires card whitelisting from the [Merchant Backoffice Portal](https://sandbox-backoffice.nonprod.paygate.systems).
+> **Important:** Attempting a payment with a card that has not been whitelisted results in a declined payment with `responseCode: CARD_NOT_WHITELISTED`; a card still in its cooldown period declines with `responseCode: PENDING_CARD`.
 
 ### Whitelist Cards
 
@@ -169,9 +164,8 @@ curl https://sandbox-merchants-api.nonprod.paygate.systems/whitelist/card/cwl_ab
 - Block email addresses associated with suspicious activity.
 - Proactively block known bad actors before they attempt a transaction.
 
-### Controlled Access with Whitelist
+### Working with the Mandatory Whitelist
 
-- Restrict payments to a known set of corporate cards during a closed beta.
-- Limit transactions to pre-verified cards for high-value merchants.
-- Gradually roll out access by whitelisting cards in batches.
-- Plan ahead for the 72-hour cooldown when onboarding new cards.
+- Whitelist cards server-to-server as soon as you know them — well before the customer pays — so the ~72-hour cooldown has elapsed by payment time.
+- Batch registrations (up to 100 cards per request) when onboarding many cards at once.
+- Monitor `cooldownExpiresAt` on new entries to know when each card becomes usable.

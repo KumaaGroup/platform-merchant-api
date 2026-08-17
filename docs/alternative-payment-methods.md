@@ -1,5 +1,7 @@
 # Alternative Payment Methods
 
+> **Deprecation notice:** The per-method wallet endpoints on this page (`POST /payment/google-pay`, `POST /payment/apple-pay`) belong to the endpoint-per-payment-method model that is being phased out. New integrations must use the single initialize flow — [`POST /payment/crypto/initialize`](crypto-payments.md) — where payment methods are offered to the customer on the hosted payments page. The information below remains relevant for existing integrations.
+
 Alternative Payment Methods (APMs) let you accept payments through a customer's digital wallet without ever handling card data yourself. You initiate the payment server-side and we return a hosted payment page, which you then embed on your checkout. A customer with a valid payment method in their wallet taps the wallet button, completes the sheet, and the platform takes over — the rest follows the standard card-payment workflow, including 3D Secure when required.
 
 The integration is **the same regardless of which APM you use** — only the create endpoint differs. Everything downstream (the hosted page, the lifecycle, webhooks, 3DS handling, and the payment details you read back) is identical.

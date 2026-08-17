@@ -2,10 +2,12 @@
 
 You can refund a completed card payment either fully or partially. Refunds are processed against the original payment using its platform-generated `id`.
 
+> **Which endpoint to use:** payments created via [`POST /payment/crypto/initialize`](crypto-payments.md) are refunded with [`POST /payment/{id}/refund/initialize`](#create-a-refund). The older `POST /payment/{id}/refund` is **deprecated** and remains only for payments created through the deprecated direct card endpoints (see [Deprecated: legacy refunds](#deprecated-legacy-refund-endpoint)).
+
 ## Create a Refund
 
 ```bash
-curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_abc123/refund \
+curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_abc123/refund/initialize \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -30,14 +32,13 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/pay_a
 
 ### Response
 
-Refunds are processed **asynchronously**. A successful request returns **200 OK** with the refund in `REQUESTED` status — the refund record is created immediately and then validated and processed in the background. The final outcome is delivered via [webhook](#webhook-notifications) and can also be polled via `GET /payment/{id}`.
+Refunds are processed **asynchronously**. A successful request returns **200 OK** with the refund in `REQUESTED` status — the refund record is created immediately and then validated and processed in the background. The final outcome is delivered via [webhook](#webhook-notifications) and can also be polled via `GET /payment/record/{id}`.
 
 ```json
 {
   "id": "ref_def456",
   "paymentId": "pay_abc123",
   "amount": 10.00,
-  "createdAt": "2026-03-04T12:00:00Z",
   "status": "REQUESTED"
 }
 ```
@@ -51,7 +52,6 @@ For a full refund (request without `amount`), the response `amount` is the full 
 | `id`        | string | Platform-generated refund ID             |
 | `paymentId` | string | ID of the original payment               |
 | `amount`    | number | Refund amount                            |
-| `createdAt` | string | Timestamp of refund creation (ISO 8601)  |
 | `status`    | string | Refund status                            |
 
 ### Status Codes
@@ -68,14 +68,14 @@ For a full refund (request without `amount`), the response `amount` is the full 
 
 ## Checking Refund Status
 
-Refunds are returned as part of the payment details. Use the refund `id` to query its status:
+Refunds are payment records of type `REFUND`. Use the refund `id` with the payment-record endpoint:
 
 ```bash
-curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/ref_def456 \
+curl https://sandbox-merchants-api.nonprod.paygate.systems/payment/record/ref_def456 \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-The response includes a `parentPaymentId` field linking the refund back to the original payment, and `type` will indicate it is a refund.
+The response includes a `parentPaymentId` field linking the refund back to the original payment, `type: REFUND`, and a `details` object carrying the refund's own status, amount, masked card, `responseCode`, and timestamps. The original payment record's `amountRefunded` field accumulates the refunded total.
 
 ## Refund Lifecycle
 
@@ -113,7 +113,7 @@ stateDiagram-v2
 
 ## Webhook Notifications
 
-A `CARD_PAYMENT` webhook **is sent when a refund reaches a terminal status** — `COMPLETED`, `DECLINED`, or `REJECTED`. Intermediate statuses (`REQUESTED`, `PENDING`, `PENDING_APPROVAL`, `APPROVED`) do **not** trigger webhook notifications; poll `GET /payment/{id}` if you need to observe them.
+A `CARD_PAYMENT` webhook **is sent when a refund reaches a terminal status** — `COMPLETED`, `DECLINED`, or `REJECTED`. Intermediate statuses (`REQUESTED`, `PENDING`, `PENDING_APPROVAL`, `APPROVED`) do **not** trigger webhook notifications; poll the refund if you need to observe them.
 
 The webhook payload identifies the refund by its `id` (as `objectId`) and your `externalId`:
 
@@ -131,8 +131,12 @@ For `DECLINED` refunds, the `responseCode` field carries the decline reason. See
 
 > **Note on duplicate `externalId`:** a duplicate is always rejected synchronously with `409 Conflict` — no refund record is created and no webhook is sent. See [Idempotency](idempotency.md) for guidance on choosing `externalId` values.
 
+## Deprecated: Legacy Refund Endpoint
+
+> **Deprecated** — `POST /payment/{id}/refund` applies only to payments created through the deprecated direct card endpoints (`POST /payment`, `POST /payment/batch`, first-generation `POST /payment/crypto`). It accepts the same request body as `/refund/initialize`; its response additionally includes `createdAt`, and those refunds are read back via `GET /payment/{id}`. Once you migrate payment creation to [`POST /payment/crypto/initialize`](crypto-payments.md), use `POST /payment/{id}/refund/initialize` for refunds as well.
+
 ## Best Practices
 
 - **Use a unique `externalId` per refund** to ensure idempotency. If you retry a refund request with the same `externalId`, you'll receive a `409 Conflict` rather than a duplicate refund.
-- **Check the original payment status** before requesting a refund. Refunds can only be issued against payments in `CAPTURED` status.
+- **Check the original payment status** before requesting a refund. Refunds can only be issued against successfully captured payments.
 - **Track partial refunds carefully.** The total of all partial refunds must not exceed the original payment amount.

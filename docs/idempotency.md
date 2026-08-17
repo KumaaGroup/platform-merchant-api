@@ -35,23 +35,28 @@ Choose an `externalId` format that is meaningful to your system and guaranteed t
 
 The `externalId` is required on the following endpoints:
 
-| Endpoint                          | Purpose                                |
-|-----------------------------------|----------------------------------------|
-| `POST /payment`                   | Create a card payment                  |
-| `POST /payment/batch`             | Create batch payments (per item)       |
-| `POST /payment/crypto`            | Initiate a crypto payment              |
-| `POST /payment/ptc`               | Create a push-to-card payment          |
-| `POST /payment/{id}/refund`       | Request a refund                       |
-| `POST /open-banking/transactions` | Create an open banking transaction     |
+| Endpoint                               | Purpose                                |
+|----------------------------------------|----------------------------------------|
+| `POST /payment/crypto/initialize`      | Initialize a payment                   |
+| `POST /payment/{id}/refund/initialize` | Request a refund                       |
+| `POST /push-to-card/initialize`        | Create a push-to-card disbursement     |
+| `POST /open-banking/transactions`      | Create an open banking transaction     |
+| `POST /payment` *(deprecated)*         | Create a direct card payment           |
+| `POST /payment/batch` *(deprecated)*   | Create batch payments (per item)       |
+| `POST /payment/crypto` *(deprecated)*  | First-generation crypto initiate       |
+| `POST /payment/ptc` *(deprecated)*     | Old push-to-card endpoint              |
+| `POST /payment/{id}/refund` *(deprecated)* | Refund for direct-API payments     |
 
 ## Filtering by External ID
 
 You can look up a transaction using its `externalId` as a query parameter:
 
 ```bash
-curl "https://sandbox-merchants-api.nonprod.paygate.systems/payment?externalId=order-48291" \
+curl "https://sandbox-merchants-api.nonprod.paygate.systems/payment/record?externalId=order-48291" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
+
+(The equivalent filter exists on `GET /payment` for payments created via the deprecated direct endpoints, and on `GET /push-to-card/payment` for disbursements.)
 
 This is useful for reconciliation and verifying whether a transaction was already created before retrying.
 
@@ -70,7 +75,7 @@ Batch payments are atomic: all succeed or none are created.
 1. Generate a unique externalId for the transaction
 2. Send the API request
 3. If you receive a network error or timeout:
-   a. Query GET /payment?externalId=YOUR_ID to check if it was created
+   a. Query GET /payment/record?externalId=YOUR_ID to check if it was created
    b. If found, use the existing transaction
    c. If not found, retry the original request with the same externalId
 4. If you receive a 409 Conflict, the transaction already exists — no action needed

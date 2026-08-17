@@ -1,46 +1,51 @@
 # Error Handling
 
-The Platform Merchants API returns errors in the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) Problem Details format. All error responses use the content type `application/problem+json`.
+The Platform Merchants API returns two kinds of error responses, depending on where the request fails.
 
-## Error Response Format
+## Business Errors
+
+Errors raised while processing a well-formed request — a duplicate `externalId`, a missing resource, an authentication failure, a declined operation — are returned as `application/json` with a `message` field:
+
+```json
+{
+  "message": "duplicate payment request"
+}
+```
+
+| Field      | Type   | Description                                                  |
+|------------|--------|--------------------------------------------------------------|
+| `message`  | string | Description of what went wrong                               |
+| `errors`   | array  | Field-level details, when applicable (optional)              |
+
+When the `errors` array is present, each entry pinpoints a specific field:
+
+| Field      | Type   | Description                           |
+|------------|--------|---------------------------------------|
+| `field`    | string | Field name                            |
+| `message`  | string | What is wrong with the field          |
+
+For server errors (`5xx`), the `message` is a generic status description — implementation details are never exposed.
+
+## Request Validation Errors
+
+Requests that fail schema validation before processing (missing required fields, pattern or type mismatches, malformed JSON) are rejected with the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) Problem Details format, content type `application/problem+json`:
 
 ```json
 {
   "status": 422,
   "title": "Unprocessable Entity",
-  "detail": "Payment was declined by the issuing bank",
-  "type": "https://api.paygate.systems/errors/payment-declined",
-  "instance": "/payment",
+  "detail": "validation failed",
   "errors": [
     {
-      "location": "card.number",
-      "message": "Card number is invalid",
-      "value": "411111111111"
+      "location": "body.card.cvc",
+      "message": "expected string to match pattern ^[0-9]{3,4}$",
+      "value": "12"
     }
   ]
 }
 ```
 
-### Fields
-
-| Field      | Type   | Description                                                  |
-|------------|--------|--------------------------------------------------------------|
-| `status`   | integer| HTTP status code                                             |
-| `title`    | string | Short human-readable summary of the problem                  |
-| `detail`   | string | Specific explanation of what went wrong                      |
-| `type`     | string | URI identifying the error type                               |
-| `instance` | string | URI identifying the specific request that caused the error   |
-| `errors`   | array  | Field-level validation errors (optional)                     |
-
-### Validation Error Details
-
-When the `errors` array is present, each entry pinpoints a specific field that failed validation:
-
-| Field      | Type   | Description                           |
-|------------|--------|---------------------------------------|
-| `location` | string | Dot-notation path to the invalid field |
-| `message`  | string | What is wrong with the field          |
-| `value`    | string | The value that was submitted          |
+Each entry in `errors` identifies the invalid field by its `location` (dot-notation path), the validation `message`, and the submitted `value`.
 
 ## HTTP Status Codes
 
@@ -56,12 +61,12 @@ When the `errors` array is present, each entry pinpoints a specific field that f
 
 | Code | Meaning              | Common Causes                                              |
 |------|----------------------|------------------------------------------------------------|
-| 400  | Bad Request          | Malformed JSON, invalid field values, batch size exceeded   |
+| 400  | Bad Request          | Malformed JSON, invalid field values, unsupported currency, batch size exceeded |
 | 401  | Unauthorized         | Missing, expired, or invalid access token                  |
 | 403  | Forbidden            | IP not whitelisted (if [IP whitelisting](authentication.md#ip-whitelisting) is enabled) |
 | 404  | Not Found            | Payment, webhook, or resource does not exist               |
 | 409  | Conflict             | Duplicate `externalId` (see [Idempotency](idempotency.md)) |
-| 422  | Unprocessable Entity | Payment declined, partial refund not supported for the payment |
+| 422  | Unprocessable Entity | Request validation failed, payment declined, partial refund not supported, `useRefunds: true` |
 
 ### Server Error Codes
 
@@ -87,54 +92,38 @@ For `4xx` errors, do **not** retry — fix the request first. The exception is `
 
 ## Common Error Scenarios
 
-### Invalid card details (400)
-
-```json
-{
-  "status": 400,
-  "title": "Bad Request",
-  "detail": "Validation failed",
-  "type": "https://api.paygate.systems/errors/validation",
-  "instance": "/payment",
-  "errors": [
-    { "location": "card.expiry.year", "message": "Card is expired", "value": "2024" },
-    { "location": "card.cvc", "message": "CVC must be 3 or 4 digits", "value": "12" }
-  ]
-}
-```
-
 ### Duplicate external ID (409)
 
 ```json
 {
-  "status": 409,
-  "title": "Conflict",
-  "detail": "A transaction with externalId 'order-001' already exists",
-  "type": "https://api.paygate.systems/errors/duplicate-external-id",
-  "instance": "/payment"
+  "message": "duplicate payment request"
 }
 ```
 
-### Payment declined (422)
+### Payment cannot be accepted (422)
 
 ```json
 {
-  "status": 422,
-  "title": "Unprocessable Entity",
-  "detail": "Payment was declined by the issuing bank",
-  "type": "https://api.paygate.systems/errors/payment-declined",
-  "instance": "/payment"
+  "message": "msb is not activated"
 }
 ```
 
-### Expired token (401)
+### Expired or invalid token (401)
 
 ```json
 {
-  "status": 401,
-  "title": "Unauthorized",
-  "detail": "Access token has expired",
-  "type": "https://api.paygate.systems/errors/unauthorized",
-  "instance": "/payment"
+  "message": "missing or invalid authentication headers"
 }
 ```
+
+### Invalid test card (400)
+
+Sandbox payments must use the [published test cards](card-payments.md#testing) with all fields matching exactly:
+
+```json
+{
+  "message": "card is not valid for test payments"
+}
+```
+
+> **Note — decline reasons are not HTTP errors:** a payment that is accepted but later declined ends in status `DECLINED` with the reason in the `responseCode` field (`DO_NOT_HONOUR`, `INSUFFICIENT_FUNDS`, `THREE_DS_FAILED`, `CARD_NOT_WHITELISTED`, …), delivered via webhook and visible on the payment record. See the per-flow pages for the decline codes relevant to each lifecycle.
