@@ -12,6 +12,7 @@
   * [Refunds](docs/refunds.md)
   * [Blocklist and Whitelist](docs/blocklist-and-whitelist.md)
   * [Open Banking](docs/open-banking.md)
+  * [KumaaGuard Risk Rating](docs/kumaaguard-risk-rating.md)
 * ```yaml
   type: builtin:openapi
   props:
