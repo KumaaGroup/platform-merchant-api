@@ -784,6 +784,151 @@ paths:
       summary: Get push-to-card payment
       tags:
         - Push to Card
+  /risk-score:
+    get:
+      description: List risk score records with pagination.
+      operationId: risk-score-list
+      parameters:
+        - description: Risk scored payment status.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Risk scored payment status.
+            example: CAPTURED
+            type: string
+        - description: Cursor for pagination.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Cursor for pagination.
+            type: string
+        - description: Maximum number of items.
+          explode: false
+          in: query
+          name: limit
+          schema:
+            description: Maximum number of items.
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Sort order.
+          explode: false
+          in: query
+          name: order
+          schema:
+            description: Sort order.
+            enum:
+              - asc
+              - desc
+            example: desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoreListOutput'
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Error
+      summary: List risk scores
+      tags:
+        - Risk Score
+    post:
+      description: Submit payment details to request a risk score. Idempotent on externalId — a repeated externalId returns a conflict rather than creating a duplicate.
+      operationId: risk-score-request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/RiskScoreRequestInputData'
+              description: Request risk score data
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoreRequestOutput'
+          description: OK
+        "409":
+          description: Risk score request with the same externalId already exists
+      summary: Request risk score for payment
+      tags:
+        - Risk Score
+  /risk-score/{riskScoreId}:
+    get:
+      description: Get a risk score by id.
+      operationId: risk-score-by-id
+      parameters:
+        - description: Risk score id created.
+          in: path
+          name: riskScoreId
+          required: true
+          schema:
+            description: Risk score id created.
+            example: rsc_01234567-0000-0000-0000-000000000000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoreResponse'
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Error
+      summary: Get risk score
+      tags:
+        - Risk Score
+    patch:
+      description: Update the outcome of a risk score by id
+      operationId: update-risk-score-payment-outcome
+      parameters:
+        - description: Risk score id to update.
+          in: path
+          name: riskScoreId
+          required: true
+          schema:
+            description: Risk score id to update.
+            example: rsc_01234567-0000-0000-0000-000000000000
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/RiskScorePaymentOutcomeUpdateData'
+              description: Update outcome for risk scored payment.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScorePaymentOutcomeUpdateOutput'
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Error
+      summary: Update risk score outcome
+      tags:
+        - Risk Score
   /webhooks:
     get:
       description: Returns all webhooks for the authenticated merchant
@@ -2832,6 +2977,199 @@ components:
         - paymentId
         - amount
         - status
+      type: object
+    RiskScoreListOutput:
+      additionalProperties: false
+      properties:
+        items:
+          description: List of risk scored payments.
+          items:
+            $ref: '#/components/schemas/RiskScoreResponse'
+          type: array
+        nextCursor:
+          description: Next cursor.
+          type: string
+      required:
+        - items
+      type: object
+    RiskScorePaymentCardData:
+      additionalProperties: false
+      properties:
+        bin:
+          description: Card bin number
+          example: "424242"
+          pattern: ^[0-9]{6,8}$
+          type: string
+        expiry:
+          allOf:
+            - $ref: '#/components/schemas/CardExpiry'
+          description: Card expiry
+        last4:
+          description: Card last 4 numbers
+          example: "4242"
+          pattern: ^[0-9]{4}$
+          type: string
+        name:
+          description: Cardholder name
+          example: John Doe
+          minLength: 1
+          type: string
+      required:
+        - bin
+        - last4
+        - name
+        - expiry
+      type: object
+    RiskScorePaymentOutcomeUpdateData:
+      additionalProperties: false
+      properties:
+        refundAmount:
+          description: Refund amount. it should be sent for PARTIALLY_REFUNDED payment status.
+          example: 10
+          format: decimal
+          type: number
+        status:
+          description: Payment outcome.
+          enum:
+            - RISK_SCORED
+            - CAPTURED
+            - DECLINED
+            - DISPUTED
+            - REFUNDED
+            - PARTIALLY_REFUNDED
+          example: CAPTURED
+          type: string
+      required:
+        - status
+      type: object
+    RiskScorePaymentOutcomeUpdateOutput:
+      additionalProperties: false
+      properties:
+        riskScoreId:
+          description: Risk score id updated.
+          example: rsc_01234567-0000-0000-0000-000000000000
+          type: string
+      required:
+        - riskScoreId
+      type: object
+    RiskScoreRequestInputData:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Payment amount
+          example: 12.34
+          format: decimal
+          minimum: 0.01
+          multipleOf: 0.01
+          type: number
+        card:
+          allOf:
+            - $ref: '#/components/schemas/RiskScorePaymentCardData'
+          description: Card details.
+        currency:
+          description: ISO4217 currency code
+          example: USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        customer:
+          allOf:
+            - $ref: '#/components/schemas/PaymentCustomer'
+          description: Customer information.
+        deviceFingerprint:
+          description: Customer Device fingerprint hash.
+          example: a1b2c3d4e5f6
+          type: string
+        externalId:
+          description: External reference ID.
+          maxLength: 255
+          minLength: 1
+          pattern: ^[a-zA-Z0-9_-]+$
+          type: string
+        ipAddress:
+          description: Customer IP address.
+          format: ipv4
+          type: string
+        isVpnOrProxy:
+          description: Whether the IP is a known VPN or proxy.
+          type: boolean
+        paymentDateTime:
+          description: Payment date and time in ISO 8601 format with timezone.
+          example: "2026-08-17T14:30:00+05:30"
+          format: date-time
+          type: string
+        userAgent:
+          description: Customer user-agent string.
+          example: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15
+          type: string
+      required:
+        - card
+        - customer
+        - currency
+        - amount
+        - externalId
+        - paymentDateTime
+      type: object
+    RiskScoreRequestOutput:
+      additionalProperties: false
+      properties:
+        riskScore:
+          description: Risk score.
+          example: 0.2
+          format: decimal
+          maximum: 100
+          minimum: 0
+          type: number
+        riskScoreId:
+          description: Risk score id created.
+          example: rsc_01234567-0000-0000-0000-000000000000
+          type: string
+      required:
+        - riskScoreId
+        - riskScore
+      type: object
+    RiskScoreResponse:
+      additionalProperties: false
+      properties:
+        createdAt:
+          description: Creation timestamp.
+          format: date-time
+          type: string
+        externalId:
+          description: External reference ID.
+          type: string
+        riskScore:
+          description: Risk score.
+          example: 0.2
+          format: decimal
+          maximum: 100
+          minimum: 0
+          type: number
+        riskScoreId:
+          description: Risk score id.
+          example: rsc_01234567-0000-0000-0000-000000000000
+          type: string
+        status:
+          description: Risk scored payment outcome.
+          enum:
+            - RISK_SCORED
+            - CAPTURED
+            - DECLINED
+            - DISPUTED
+            - REFUNDED
+            - PARTIALLY_REFUNDED
+          example: CAPTURED
+          type: string
+        updatedAt:
+          description: Last update timestamp.
+          format: date-time
+          type: string
+      required:
+        - riskScoreId
+        - riskScore
+        - externalId
+        - status
+        - createdAt
+        - updatedAt
       type: object
     Webhook:
       additionalProperties: false
