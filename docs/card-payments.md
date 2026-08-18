@@ -47,7 +47,7 @@ sequenceDiagram
 
 ## Create a Payment
 
-> **Deprecated** — use [`POST /payment/crypto/initialize`](crypto-payments.md#step-1--initialize-a-crypto-payment) instead.
+> **Deprecated** — use [`POST /payment/crypto/initialize`](crypto-payments.md#step-1-initialize-a-crypto-payment) instead.
 
 ```bash
 curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
@@ -208,7 +208,7 @@ The response includes a `nextCursor` field. Pass it as the `cursor` parameter to
 
 ## Batch Payments
 
-> **Deprecated** — batch creation is part of the direct card API being phased out. Initialize payments individually via [`POST /payment/crypto/initialize`](crypto-payments.md#step-1--initialize-a-crypto-payment) instead.
+> **Deprecated** — batch creation is part of the direct card API being phased out. Initialize payments individually via [`POST /payment/crypto/initialize`](crypto-payments.md#step-1-initialize-a-crypto-payment) instead.
 
 ```mermaid
 sequenceDiagram

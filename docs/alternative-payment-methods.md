@@ -47,7 +47,7 @@ sequenceDiagram
 
 Two checks run inside the `TOKEN_REQUESTED` window before an APM payment ever reaches the standard card flow:
 
-- **Location check.** When the customer loads the payment page, we run a geoip check on their IP — the same approach used for [3DS challenges](card-payments.md#3d-secure-3ds), just performed earlier in the lifecycle. If their location is unsupported, the page redirects to a blocked-location page and the payment is declined with `RESTRICTED_COUNTRY` — the wallet button is never shown.
+- **Location check.** When the customer loads the payment page, we run a geoip check on their IP — the same approach used for [3DS challenges](card-payments.md#id-3d-secure-3ds), just performed earlier in the lifecycle. If their location is unsupported, the page redirects to a blocked-location page and the payment is declined with `RESTRICTED_COUNTRY` — the wallet button is never shown.
 - **Authorization window.** If the customer doesn't complete the wallet sheet within the allowed time, the payment is declined (the timeout response code is method-specific — see [Decline reasons](#decline-reasons)).
 
 Once the platform receives the callback from the hosted page, the payment behaves exactly like a regular [card payment](card-payments.md) — same lifecycle, same webhooks, same 3DS handling.
@@ -164,7 +164,7 @@ stateDiagram-v2
 |-------------------|--------------------------------------------------------------------------------------------|
 | `TOKEN_REQUESTED` | Hosted button page is live; the platform is waiting for the customer to authorize the wallet |
 | `REQUESTED`       | Customer authorized; standard card-payment processing has begun                            |
-| `AUTH_REQUESTED`  | Customer must complete a 3DS challenge (see [3D Secure](card-payments.md#3d-secure-3ds))    |
+| `AUTH_REQUESTED`  | Customer must complete a 3DS challenge (see [3D Secure](card-payments.md#id-3d-secure-3ds))    |
 | `AUTHORIZED`      | Card authorized, funds reserved                                                            |
 | `CAPTURED`        | Funds captured (terminal, success)                                                         |
 | `DECLINED`        | Payment declined (terminal) — inspect `responseCode` for the reason                        |

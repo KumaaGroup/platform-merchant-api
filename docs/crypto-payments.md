@@ -4,7 +4,7 @@ Crypto Payments are the **standard way to accept payments** on the platform. You
 
 Because your systems never collect, transmit, or store card data, your **PCI DSS exposure is significantly reduced** — cardholder data is entered exclusively on the hosted payments page and never reaches your servers.
 
-> **Important — current endpoint:** The endpoint for this flow is [`POST /payment/crypto/initialize`](#step-1--initialize-a-crypto-payment). Two earlier generations are **deprecated** and must not be used for new integrations:
+> **Important — current endpoint:** The endpoint for this flow is [`POST /payment/crypto/initialize`](#step-1-initialize-a-crypto-payment). Two earlier generations are **deprecated** and must not be used for new integrations:
 >
 > - `POST /payment` — the direct one-step card payment API (you collected card data yourself). See [Card Payments](card-payments.md).
 > - `POST /payment/crypto` — the first-generation crypto initiate endpoint. It behaves like `POST /payment/crypto/initialize` but does not require the customer name fields and returns the legacy payment shape. Migrate by switching the path, adding `customerFirstName` / `customerLastName`, and reading the payment back via [`GET /payment/record/{id}`](#payment-records-and-attempts).
@@ -82,7 +82,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/crypt
 | Field               | Type   | Required | Description                                                                  |
 |---------------------|--------|----------|------------------------------------------------------------------------------|
 | `externalId`        | string | Yes      | Your unique identifier ([details](idempotency.md))                           |
-| `customerEmail`     | string | Yes      | Customer email — identifies the customer's crypto wallet (see [Step 3](#step-3--wallet-top-up)) |
+| `customerEmail`     | string | Yes      | Customer email — identifies the customer's crypto wallet (see [Step 3](#step-3-wallet-top-up)) |
 | `customerFirstName` | string | Yes      | Customer first name                                                          |
 | `customerLastName`  | string | Yes      | Customer last name                                                           |
 | `currency`          | string | Yes      | ISO 4217 currency code — see [Supported Currencies](#supported-currencies)   |
@@ -175,7 +175,7 @@ stateDiagram-v2
 | `INITIALIZED` | Payment created via `POST /payment/crypto/initialize`, waiting for the customer on the HPP. If the customer never submits the payment, it is automatically declined shortly after the 15-minute token expires — the `CARD_PAYMENT` webhook reports `status: DECLINED` with `responseCode: INITIALIZED_PAYMENT_EXPIRED` |
 | `PENDING`     | The customer submitted a payment attempt which is being processed             |
 | `COMPLETED`   | A payment attempt succeeded (terminal, success)                               |
-| `DECLINED`    | The payment failed (terminal) — `responseCode` carries the reason, including [3DS failures](card-payments.md#3ds-failure-outcomes) |
+| `DECLINED`    | The payment failed (terminal) — `responseCode` carries the reason, including [3DS failures](card-payments.md#id-3ds-failure-outcomes) |
 
 A **card attempt** inside the record moves through the card sub-lifecycle you may know from the direct API: `REQUESTED → AUTH_REQUESTED (3DS) → AUTHORIZED → CAPTURED`, or `DECLINED` at any of those steps. The attempt-level status and `responseCode` are visible in the `attempts` array of the payment record (see below).
 
