@@ -1,34 +1,25 @@
 # Error Handling
 
-The Platform Merchants API returns two kinds of error responses, depending on where the request fails.
-
-## Business Errors
-
-Errors raised while processing a well-formed request — a duplicate `externalId`, a missing resource, an authentication failure, a declined operation — are returned as `application/json` with a `message` field:
+Every error response uses the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) Problem Details format, content type `application/problem+json` — whether the request failed schema validation or was rejected while being processed (a duplicate `externalId`, a missing resource, an authentication failure, a declined operation).
 
 ```json
 {
-  "message": "duplicate payment request"
+  "status": 409,
+  "title": "Conflict",
+  "detail": "duplicate payment request"
 }
 ```
 
-| Field      | Type   | Description                                                  |
-|------------|--------|--------------------------------------------------------------|
-| `message`  | string | Description of what went wrong                               |
-| `errors`   | array  | Field-level details, when applicable (optional)              |
+| Field      | Type    | Description                                                              |
+|------------|---------|--------------------------------------------------------------------------|
+| `status`   | integer | HTTP status code                                                         |
+| `title`    | string  | Short, human-readable summary of the problem type (the HTTP status text) |
+| `detail`   | string  | Human-readable explanation specific to this occurrence                   |
+| `type`     | string  | URI reference for the error type (optional, defaults to `about:blank`)   |
+| `instance` | string  | URI reference identifying this specific occurrence (optional)            |
+| `errors`   | array   | Field-level details, when applicable (optional)                          |
 
-When the `errors` array is present, each entry pinpoints a specific field:
-
-| Field      | Type   | Description                           |
-|------------|--------|---------------------------------------|
-| `field`    | string | Field name                            |
-| `message`  | string | What is wrong with the field          |
-
-For server errors (`5xx`), the `message` is a generic status description — implementation details are never exposed.
-
-## Request Validation Errors
-
-Requests that fail schema validation before processing (missing required fields, pattern or type mismatches, malformed JSON) are rejected with the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) Problem Details format, content type `application/problem+json`:
+Requests that fail schema validation (missing required fields, pattern or type mismatches, malformed JSON) include the `errors` array, with each entry pinpointing an invalid field:
 
 ```json
 {
@@ -45,7 +36,13 @@ Requests that fail schema validation before processing (missing required fields,
 }
 ```
 
-Each entry in `errors` identifies the invalid field by its `location` (dot-notation path), the validation `message`, and the submitted `value`.
+| Field      | Type   | Description                                        |
+|------------|--------|----------------------------------------------------|
+| `location` | string | Path of the invalid field, in dot notation         |
+| `message`  | string | What is wrong with the field                       |
+| `value`    | any    | The submitted value (omitted when not applicable)  |
+
+For server errors (`5xx`), the `detail` is a generic status description — implementation details are never exposed.
 
 ## HTTP Status Codes
 
@@ -96,7 +93,9 @@ For `4xx` errors, do **not** retry — fix the request first. The exception is `
 
 ```json
 {
-  "message": "duplicate payment request"
+  "status": 409,
+  "title": "Conflict",
+  "detail": "duplicate payment request"
 }
 ```
 
@@ -104,7 +103,9 @@ For `4xx` errors, do **not** retry — fix the request first. The exception is `
 
 ```json
 {
-  "message": "msb is not activated"
+  "status": 422,
+  "title": "Unprocessable Entity",
+  "detail": "msb is not activated"
 }
 ```
 
@@ -112,7 +113,9 @@ For `4xx` errors, do **not** retry — fix the request first. The exception is `
 
 ```json
 {
-  "message": "missing or invalid authentication headers"
+  "status": 401,
+  "title": "Unauthorized",
+  "detail": "missing or invalid authentication headers"
 }
 ```
 
@@ -122,7 +125,9 @@ Sandbox payments must use the [published test cards](card-payments.md#testing) w
 
 ```json
 {
-  "message": "card is not valid for test payments"
+  "status": 400,
+  "title": "Bad Request",
+  "detail": "card is not valid for test payments"
 }
 ```
 
