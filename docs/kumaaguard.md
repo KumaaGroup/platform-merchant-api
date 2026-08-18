@@ -150,6 +150,8 @@ How you act on the score is your decision — analyze the risk ratings you recei
 | 200  | Risk score computed                                         |
 | 409  | Duplicate `externalId` (see [Idempotency](idempotency.md))  |
 
+Error responses use the platform-wide RFC 7807 format — see [Error Handling](error-handling.md).
+
 ## Report the Payment Outcome
 
 After you process (or reject) the payment, report what actually happened. Update the same record again later if the payment develops — a chargeback dispute, a refund.

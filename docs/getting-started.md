@@ -1,18 +1,27 @@
 # Getting Started
 
-The Platform Merchants API lets you accept payments through a hosted payments page, process refunds, initiate open banking transfers, and manage webhooks — all through a single REST API.
+The platform serves two audiences through its REST API:
 
-## Base URL
+- **Merchants** accept payments through a hosted payments page, process refunds, initiate open banking transfers, and manage webhooks.
+- **KumaaGuard partners** send payments for ML-driven fraud risk scoring before submitting them to their own acquirer — see [KumaaGuard](kumaaguard.md).
 
-| Environment | URL                                                        |
-|-------------|------------------------------------------------------------|
-| Sandbox     | `https://sandbox-merchants-api.nonprod.paygate.systems`    |
+Each role has its own onboarding, its own API credentials, and its own base URLs. Credentials are scoped to the role's endpoints: a merchant token is not valid on the KumaaGuard endpoints, and a partner token is not valid on the payment endpoints.
 
-> **Warning — Sandbox Data Policy:** The sandbox environment is strictly for testing with **synthetic (fictitious) data only**. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **forbidden**. Always use the provided [test card numbers](card-payments.md#testing), fabricated names, addresses, and email addresses. Violating this policy may result in account suspension.
+## Choose Your Path
+
+|                  | Merchants                                               | KumaaGuard Partners                            |
+|------------------|---------------------------------------------------------|------------------------------------------------|
+| You want to      | Accept payments, issue refunds, receive webhooks        | Risk-score payments before processing them     |
+| Sandbox API      | `https://sandbox-merchants-api.nonprod.paygate.systems` | `https://sandbox-api.nonprod.kumaaguard.com`   |
+| Sandbox auth     | `https://sandbox-auth.nonprod.paygate.systems`          | `https://sandbox-auth.nonprod.kumaaguard.com`  |
+| Onboarding       | [Self-service registration](#obtaining-your-credentials) | Onboarded by the platform; credentials arrive by email |
+| Where to start   | [Quick Start](#quick-start) below                       | [For KumaaGuard Partners](#for-kumaaguard-partners) below, then the [KumaaGuard](kumaaguard.md) guide |
+
+> **Warning — Sandbox Data Policy:** The sandbox environments are strictly for testing with **synthetic (fictitious) data only**. The use of real personally identifiable information (PII) or real cardholder data (CHD) is **forbidden**. Always use the provided [test card numbers](card-payments.md#testing), fabricated names, addresses, and email addresses. Violating this policy may result in account suspension.
 
 ## Prerequisites
 
-Before you begin, make sure you have:
+Before you begin as a **merchant**, make sure you have:
 
 - A merchant account with API credentials (`client_id` and `client_secret`)
 - HTTPS capability for receiving webhooks
@@ -35,6 +44,8 @@ From the backoffice portal you can:
 > **Note:** MFA is enabled by default for all users and cannot be disabled. API credentials are provided via email during onboarding and cannot be retrieved from the portal.
 
 ## Quick Start
+
+The steps below take a merchant from credentials to a completed sandbox payment.
 
 ### 1. Obtain an access token
 
@@ -125,11 +136,29 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/webhooks \
 
 Create a second webhook with `eventType: WALLET_TRANSFER` to be notified when the customer's wallet top-up is captured — settlement is based on it (see [Crypto Payments](crypto-payments.md#webhooks)).
 
+## For KumaaGuard Partners
+
+KumaaGuard partners are a separate role with their own credentials, auth host, and a dedicated endpoint set (`/risk-score`). Partner accounts are onboarded by the platform — onboarding starts in sandbox, and your API credentials arrive by email once it completes.
+
+The token flow is the same OAuth2 client-credentials exchange as for merchants, on the KumaaGuard auth host:
+
+```bash
+curl -X POST https://sandbox-auth.nonprod.kumaaguard.com/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "grant_type=client_credentials"
+```
+
+Use the token against the KumaaGuard API host to request a risk score for a payment, then report its outcome as it develops. The full workflow, endpoint reference, and best practices are on the [KumaaGuard](kumaaguard.md) page.
+
+The [Authentication](authentication.md) guidance on token lifecycle, refresh strategy, and credential handling applies to partners unchanged; only the hosts differ.
+
 ## Key Concepts
 
 ### External ID and Idempotency
 
-Every payment and transaction requires a merchant-provided `externalId`. This identifier:
+Every payment, transaction, and risk score requires a caller-provided `externalId`. This identifier:
 
 - Must be unique across your account
 - Allows only alphanumeric characters, hyphens, and underscores (`^[a-zA-Z0-9_-]+$`)
@@ -151,11 +180,13 @@ Each payment-method attempt within the record (for example the card payment) has
 
 ### Error Format
 
-Errors are returned as JSON with a `message` describing the problem; request-validation failures additionally pinpoint the offending fields. See [Error Handling](error-handling.md) for the exact shapes.
+Errors are returned in the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) Problem Details format (`application/problem+json`); request-validation failures additionally pinpoint the offending fields in an `errors` array. See [Error Handling](error-handling.md) for the exact shapes.
 
 ```json
 {
-  "message": "duplicate payment request"
+  "status": 409,
+  "title": "Conflict",
+  "detail": "duplicate payment request"
 }
 ```
 
@@ -170,3 +201,4 @@ Errors are returned as JSON with a `message` describing the problem; request-val
 - [Webhooks](webhooks.md) — Event notifications setup
 - [Error Handling](error-handling.md) — Error codes and troubleshooting
 - [Blocklist and Whitelist](blocklist-and-whitelist.md) — Managing blocked customers and allowed cards
+- [KumaaGuard](kumaaguard.md) — Payment risk scoring for partners
