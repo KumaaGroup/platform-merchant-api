@@ -1,6 +1,6 @@
 # Card Payments
 
-> **Deprecation notice:** The direct payment endpoints described on this page — `POST /payment`, `POST /payment/batch`, and `POST /payment/ptc` — are **deprecated** and are being phased out. New integrations must use [`POST /payment/crypto/initialize`](crypto-payments.md) (for accepting payments) and [`POST /push-to-card/initialize`](#push-to-card) (for disbursements), and existing merchants must migrate. The information below remains relevant for payment statuses, `GET /payment`, and test cards.
+> **Deprecation notice:** The direct payment endpoints described on this page — `POST /payment` and `POST /payment/batch` — are **deprecated** and are being phased out (`POST /payment/ptc` has already been **removed**). New integrations must use [`POST /payment/crypto/initialize`](crypto-payments.md) (for accepting payments) and [`POST /push-to-card/initialize`](#push-to-card) (for disbursements), and existing merchants must migrate. The information below remains relevant for payment statuses, `GET /payment`, and test cards.
 
 > **Note:** `GET /payment` and `GET /payment/{id}` return payments created through the deprecated direct endpoints. Payments created via [`POST /payment/crypto/initialize`](crypto-payments.md) are read through [`GET /payment/record`](crypto-payments.md#payment-records-and-attempts) instead.
 
@@ -97,8 +97,8 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
 | `customer.phone`        | string  | No       | Phone in E.164 format (e.g. `+49170123456`)        |
 | `customerIp`            | string  | No       | Customer's IP address                              |
 | `metadata`              | string  | No       | Free-form metadata for your own reference          |
-| `successUrl`            | string  | No       | Redirect URL after successful 3DS authentication   |
-| `failureUrl`            | string  | No       | Redirect URL after failed 3DS authentication       |
+| `successUrl`            | string  | Yes      | Redirect URL after a successful payment            |
+| `failureUrl`            | string  | Yes      | Redirect URL after a failed payment                |
 
 ### Billing Address
 
@@ -139,7 +139,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
 
 When a payment is created, it starts in `REQUESTED` status and the payment workflow begins. If the platform determines that 3D Secure authentication is required, the payment status changes to `AUTH_REQUESTED`. `AUTH_REQUESTED` is set **only** to inform the merchant that the customer must complete a 3DS challenge — it never appears on payments that don't go through 3DS, and never on refunds, chargebacks, or push-to-card.
 
-The 3DS challenge URL (`actionUrl`) is delivered via a [webhook](webhooks.md) notification for `CARD_PAYMENT` events. It is also available by calling [GET /payment/{id}](#get-payment-details). The `actionUrl` is **never** included in the create payment response.
+The 3DS challenge URL (`actionUrl`) is delivered via a [webhook](webhooks.md) notification for `PAYMENT` events. It is also available by calling [GET /payment/{id}](#get-payment-details). The `actionUrl` is **never** included in the create payment response.
 
 Once you receive the `actionUrl`, redirect the customer to complete the 3DS challenge. After authentication, the customer is redirected to your `successUrl` or `failureUrl`, and the payment status updates accordingly via webhook.
 
@@ -152,7 +152,7 @@ There is no dedicated payment status for 3DS failure or 3DS expiry. When a 3DS c
 | `THREE_DS_FAILED`  | The 3DS challenge failed — authentication was unsuccessful, the issuer rejected the challenge, or the customer was blocked. |
 | `THREE_DS_EXPIRED` | The 3DS challenge timed out — the customer did not complete authentication within the allowed time.    |
 
-Both values arrive together with `status: DECLINED`, on the same `CARD_PAYMENT` webhook that signals the decline (and on `GET /payment/{id}`). To recognise a 3DS-related decline programmatically, check `status == DECLINED` **and** `responseCode in {THREE_DS_FAILED, THREE_DS_EXPIRED}`. The customer can usually retry by submitting a new payment.
+Both values arrive together with `status: DECLINED`, on the same `PAYMENT` webhook that signals the decline (and on `GET /payment/{id}`). To recognise a 3DS-related decline programmatically, check `status == DECLINED` **and** `responseCode in {THREE_DS_FAILED, THREE_DS_EXPIRED}`. The customer can usually retry by submitting a new payment.
 
 ## Payment Lifecycle
 
@@ -269,7 +269,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment/batch
 
 ## Push-to-Card
 
-> **Deprecated endpoint:** `POST /payment/ptc` is deprecated. Use `POST /push-to-card/initialize` — same request shape — and read disbursements back via `GET /push-to-card/payment` / `GET /push-to-card/payment/{id}`.
+> **Removed endpoint:** `POST /payment/ptc` no longer exists. Use `POST /push-to-card/initialize` — same request shape — and read disbursements back via `GET /push-to-card/payment` / `GET /push-to-card/payment/{id}`.
 
 ```mermaid
 sequenceDiagram
@@ -340,6 +340,8 @@ curl "https://sandbox-merchants-api.nonprod.paygate.systems/push-to-card/payment
 
 The list endpoint supports the standard `limit`, `cursor`, and `externalId` query parameters. Each disbursement includes the masked card, amount, `status`, `responseCode` (decline reason, if any), and timestamps.
 
+Status changes are delivered via webhooks with event type `PUSH_TO_CARD` (see [Webhooks](webhooks.md)) — disbursements no longer share the payment event type.
+
 ### Push-to-Card Lifecycle
 
 Push-to-card disbursements use a different state machine from card payments. They never go through 3D Secure, so `AUTH_REQUESTED`, `AUTHORIZED`, and `CAPTURED` do not apply.
@@ -377,7 +379,7 @@ Each row in the tables below represents a single test scenario with a determinis
 - Cardholder name matching is **case-insensitive** — `"jane smith"` and `"JANE SMITH"` both match `Jane Smith`.
 - The CVC field accepts any 3-digit value (e.g. `123`).
 - Google Pay and Apple Pay payments are not subject to test card validation.
-- Provide `successUrl` and `failureUrl` when testing 3DS flows so you can observe the redirect behaviour.
+- Use reachable `successUrl` and `failureUrl` values when testing 3DS flows so you can observe the redirect behaviour.
 - Use a unique `externalId` for each test payment to avoid `409 Conflict` errors.
 
 ### Visa — Approved

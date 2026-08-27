@@ -108,7 +108,7 @@ Response:
 
 Redirect your customer to the `actionUrl` (valid for 15 minutes). The full flow — including the wallet top-up step — is described in [Crypto Payments](crypto-payments.md).
 
-> **Deprecated:** the direct card endpoints (`POST /payment`, `POST /payment/batch`, `POST /payment/crypto`, `POST /payment/google-pay`, `POST /payment/apple-pay`, `POST /payment/ptc`) are being phased out. New integrations must use the initialize flow above.
+> **Deprecated:** the direct card endpoints (`POST /payment`, `POST /payment/batch`, `POST /payment/crypto`, `POST /payment/google-pay`, `POST /payment/apple-pay`) are being phased out. New integrations must use the initialize flow above. (`POST /payment/ptc` has already been removed — use [`POST /push-to-card/initialize`](card-payments.md#push-to-card) for disbursements.)
 
 ### 4. Check the payment
 
@@ -129,7 +129,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/webhooks \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-server.com/webhooks/payments",
-    "eventType": "CARD_PAYMENT",
+    "eventType": "PAYMENT",
     "enabled": true
   }'
 ```
