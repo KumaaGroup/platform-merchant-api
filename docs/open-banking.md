@@ -1,5 +1,7 @@
 # Open Banking
 
+> **Deprecation notice:** Open banking is **deprecated** and is being phased out. New integrations must use the [initialize flow](crypto-payments.md) instead. The information below remains for existing integrations.
+
 Open banking transactions allow your customers to pay directly from their bank account. The customer is redirected to a secure widget where they select their bank and authorize the transfer.
 
 All open banking transactions are processed in **EUR**.

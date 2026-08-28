@@ -197,7 +197,7 @@ Errors are returned in the [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7
 - [Crypto Payments](crypto-payments.md) — The hosted-page payment flow with merchant wallet top-ups
 - [Card Payments](card-payments.md) — Payment statuses, deprecated direct endpoints, and test cards
 - [Refunds](refunds.md) — Full and partial refund processing
-- [Open Banking](open-banking.md) — Bank transfer transactions
+- [Open Banking](open-banking.md) — Bank transfer transactions *(deprecated)*
 - [Webhooks](webhooks.md) — Event notifications setup
 - [Error Handling](error-handling.md) — Error codes and troubleshooting
 - [Blocklist and Whitelist](blocklist-and-whitelist.md) — Managing blocked customers and allowed cards

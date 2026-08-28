@@ -139,7 +139,9 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/payment \
 
 When a payment is created, it starts in `REQUESTED` status and the payment workflow begins. If the platform determines that 3D Secure authentication is required, the payment status changes to `AUTH_REQUESTED`. `AUTH_REQUESTED` is set **only** to inform the merchant that the customer must complete a 3DS challenge — it never appears on payments that don't go through 3DS, and never on refunds, chargebacks, or push-to-card.
 
-The 3DS challenge URL (`actionUrl`) is delivered via a [webhook](webhooks.md) notification for `PAYMENT` events. It is also available by calling [GET /payment/{id}](#get-payment-details). The `actionUrl` is **never** included in the create payment response.
+> **Initialize flow:** for payments created via [`POST /payment/crypto/initialize`](crypto-payments.md) (or [fiat](fiat-payments.md)), the `actionUrl` returned in the initialize response is the hosted payments page, and 3DS is handled there automatically — the hosted page takes the customer through the challenge and back. You do not deliver any 3DS URL yourself. The mechanics below apply to the **deprecated direct endpoints** only.
+
+For direct-API payments, the 3DS challenge URL (`actionUrl`) is delivered via a [webhook](webhooks.md) notification for `PAYMENT` events. It is also available by calling [GET /payment/{id}](#get-payment-details). The `actionUrl` is **never** included in the create payment response.
 
 Once you receive the `actionUrl`, redirect the customer to complete the 3DS challenge. After authentication, the customer is redirected to your `successUrl` or `failureUrl`, and the payment status updates accordingly via webhook.
 

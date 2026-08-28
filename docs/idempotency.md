@@ -41,8 +41,8 @@ The `externalId` is required on the following endpoints:
 | `POST /payment/fiat/initialize`        | Initialize a fiat payment              |
 | `POST /payment/{id}/refund/initialize` | Request a refund                       |
 | `POST /push-to-card/initialize`        | Create a push-to-card disbursement     |
-| `POST /open-banking/transactions`      | Create an open banking transaction     |
 | `POST /payment` *(deprecated)*         | Create a direct card payment           |
+| `POST /open-banking/transactions` *(deprecated)* | Create an open banking transaction |
 | `POST /payment/batch` *(deprecated)*   | Create batch payments (per item)       |
 | `POST /payment/crypto` *(deprecated)*  | First-generation crypto initiate       |
 | `POST /payment/{id}/refund` *(deprecated)* | Refund for direct-API payments     |
