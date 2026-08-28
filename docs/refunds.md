@@ -62,7 +62,7 @@ For a full refund (request without `amount`), the response `amount` is the full 
 | 400  | Invalid request (e.g. non-positive or malformed `amount`)          |
 | 404  | Payment not found                                                  |
 | 409  | Duplicate `externalId` (see [Idempotency](idempotency.md))         |
-| 422  | Partial refund not supported for this payment                      |
+| 422  | Partial refund not supported for this payment, or refunds not enabled for your merchant account |
 
 > **Note:** Whether the requested amount exceeds the remaining refundable amount is verified **asynchronously** during processing, not at submission. If the check fails, the refund transitions to `DECLINED` (see the [lifecycle](#refund-lifecycle) below) — you are notified via webhook rather than an HTTP error.
 
@@ -113,13 +113,13 @@ stateDiagram-v2
 
 ## Webhook Notifications
 
-A `CARD_PAYMENT` webhook **is sent when a refund reaches a terminal status** — `COMPLETED`, `DECLINED`, or `REJECTED`. Intermediate statuses (`REQUESTED`, `PENDING`, `PENDING_APPROVAL`, `APPROVED`) do **not** trigger webhook notifications; poll the refund if you need to observe them.
+A `REFUND` webhook **is sent when a refund reaches a terminal status** — `COMPLETED`, `DECLINED`, or `REJECTED`. Intermediate statuses (`REQUESTED`, `PENDING`, `PENDING_APPROVAL`, `APPROVED`) do **not** trigger webhook notifications; poll the refund if you need to observe them. (Refund notifications used to arrive on the `CARD_PAYMENT` event type — see the [event-type restructuring note](webhooks.md).)
 
 The webhook payload identifies the refund by its `id` (as `objectId`) and your `externalId`:
 
 ```json
 {
-  "eventType": "CARD_PAYMENT",
+  "eventType": "REFUND",
   "objectId": "ref_def456",
   "externalId": "refund-order-001",
   "status": "COMPLETED",

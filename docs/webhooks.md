@@ -2,6 +2,8 @@
 
 Webhooks notify your server in real time when events occur — such as a payment being completed or an open banking transfer finishing. Instead of polling the API, you register a URL and the platform sends HTTP POST requests to it whenever a relevant event happens.
 
+> **Event types renamed (2026-08):** the webhook event types have been restructured. `CARD_PAYMENT` was renamed to `PAYMENT` — existing `CARD_PAYMENT` webhooks were migrated automatically and keep delivering. The `OPEN_BANKING` event type was **removed and its webhooks deleted**: open banking transactions now emit `PAYMENT` events, so if you relied on an `OPEN_BANKING` webhook you must create a `PAYMENT` one. Refunds, chargebacks, and push-to-card disbursements now have their own event types (`REFUND`, `CHARGEBACK`, `PUSH_TO_CARD`) instead of riding `CARD_PAYMENT` — create a webhook per event type you consume.
+
 ## Why Webhooks Are Essential
 
 The Platform Merchants API is **asynchronous** in many scenarios. When you create a payment, the initial response confirms the request was accepted, but the final outcome (captured, declined, etc.) is determined later during processing. The same applies to refunds, open banking transfers, and other operations.
@@ -20,7 +22,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/webhooks \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-server.com/webhooks/payments",
-    "eventType": "CARD_PAYMENT",
+    "eventType": "PAYMENT",
     "enabled": true,
     "headers": [
       { "name": "X-Webhook-Secret", "value": "your-secret-value" }
@@ -33,7 +35,7 @@ curl -X POST https://sandbox-merchants-api.nonprod.paygate.systems/webhooks \
 | Field       | Type    | Required | Description                                       |
 |-------------|---------|----------|---------------------------------------------------|
 | `url`       | string  | Yes      | HTTPS endpoint to receive notifications (max 2048 chars) |
-| `eventType` | string  | Yes      | Event type: `CARD_PAYMENT`, `OPEN_BANKING`, or `WALLET_TRANSFER` |
+| `eventType` | string  | Yes      | Event type: `PAYMENT`, `REFUND`, `CHARGEBACK`, `PUSH_TO_CARD`, or `WALLET_TRANSFER` |
 | `enabled`   | boolean | Yes      | Whether the webhook is active                     |
 | `headers`   | array   | No       | Custom headers sent with each notification (max 5) |
 
@@ -52,7 +54,7 @@ You can attach up to 5 custom headers to each webhook. These are included in eve
 {
   "id": "wh_abc123",
   "url": "https://your-server.com/webhooks/payments",
-  "eventType": "CARD_PAYMENT",
+  "eventType": "PAYMENT",
   "enabled": true,
   "headers": [
     { "name": "X-Webhook-Secret", "value": "your-secret-value" }
@@ -64,23 +66,26 @@ You can attach up to 5 custom headers to each webhook. These are included in eve
 
 ### Constraints
 
-- Only **one webhook per event type** per merchant. If you need to handle both card payments and open banking events, create two separate webhooks.
+- Only **one webhook per event type** per merchant. If you need to handle several event types (e.g. payments and refunds), create a separate webhook for each.
 - The URL **must use HTTPS**. Plain HTTP endpoints are rejected.
 
 ## Event Types
 
 | Event Type        | Triggered When                                          |
 |-------------------|---------------------------------------------------------|
-| `CARD_PAYMENT`    | A card payment status changes (authorized, captured, declined, etc.), or a **refund** reaches a terminal status (`COMPLETED`, `DECLINED`, `REJECTED`) — see [Refunds — Webhook Notifications](refunds.md#webhook-notifications) |
-| `OPEN_BANKING`    | An open banking transaction status changes (in transit, completed, failed, etc.) |
+| `PAYMENT`         | A payment status changes (authorized, captured, declined, etc.) — card payments, payments created via the [initialize flow](crypto-payments.md), [alternative payment methods](alternative-payment-methods.md), and [open banking](open-banking.md) transactions |
+| `REFUND`          | A **refund** reaches a terminal status (`COMPLETED`, `DECLINED`, `REJECTED`) — see [Refunds — Webhook Notifications](refunds.md#webhook-notifications) |
+| `CHARGEBACK`      | A **chargeback** recorded against one of your payments changes status (chargebacks share the refund status set — see [Refund Lifecycle](refunds.md#refund-lifecycle)) |
+| `PUSH_TO_CARD`    | A [push-to-card disbursement](card-payments.md#push-to-card) status changes |
 | `WALLET_TRANSFER` | A [Crypto Payment](crypto-payments.md) wallet top-up is captured (`COMPLETED`) or expires unconfirmed (`EXPIRED`) — see [Crypto Payments — Webhooks](crypto-payments.md#webhooks) |
 
 ## Webhook Object Statuses
 
-The `status` field in a `CARD_PAYMENT` webhook payload reflects the current state of the underlying object — a card payment, refund, chargeback, or push-to-card disbursement. The exact set of values depends on the object type; see the per-object lifecycle docs for the full state machines:
+The `status` field in the payload reflects the current state of the underlying object. The exact set of values depends on the event type; see the per-object lifecycle docs for the full state machines:
 
-- Card payments and push-to-card — [Payment Lifecycle](card-payments.md#payment-lifecycle), [Push-to-Card Lifecycle](card-payments.md#push-to-card-lifecycle)
-- Refunds — [Refund Lifecycle](refunds.md#refund-lifecycle)
+- `PAYMENT` — [Payment Lifecycle](card-payments.md#payment-lifecycle) for card payments, [Crypto Payments — Payment Lifecycle](crypto-payments.md#payment-lifecycle) for the initialize flow, [Open Banking — Transaction Lifecycle](open-banking.md#transaction-lifecycle) for bank transfers
+- `REFUND` / `CHARGEBACK` — [Refund Lifecycle](refunds.md#refund-lifecycle)
+- `PUSH_TO_CARD` — [Push-to-Card Lifecycle](card-payments.md#push-to-card-lifecycle)
 
 Every webhook status corresponds to a stored record that you can fetch — via `GET /payment/record/{objectId}` for payments created through the initialize flow, or `GET /payment/{objectId}` for payments created through the deprecated direct endpoints. Duplicate-`externalId` submissions never produce a webhook — they are rejected synchronously with `409 Conflict` from the create endpoint (see [Idempotency](idempotency.md)).
 

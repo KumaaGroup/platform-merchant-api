@@ -1,5 +1,7 @@
 # Open Banking
 
+> **Deprecation notice:** Open banking is **deprecated** and is being phased out. New integrations must use the [initialize flow](crypto-payments.md) instead. The information below remains for existing integrations.
+
 Open banking transactions allow your customers to pay directly from their bank account. The customer is redirected to a secure widget where they select their bank and authorize the transfer.
 
 All open banking transactions are processed in **EUR**.
@@ -112,7 +114,7 @@ curl https://sandbox-merchants-api.nonprod.paygate.systems/open-banking/transact
 }
 ```
 
-The `iban` field is populated once the customer selects their bank account.
+The `iban` field is populated once the customer selects their bank account. For failed transfers, a `responseCode` field carries the decline reason when one is available.
 
 ## List Transactions
 
@@ -130,4 +132,6 @@ curl "https://sandbox-merchants-api.nonprod.paygate.systems/open-banking/transac
 
 ## Webhooks
 
-To receive real-time notifications when a transaction status changes, set up a webhook with event type `OPEN_BANKING`. See [Webhooks](webhooks.md) for setup instructions.
+To receive real-time notifications when a transaction status changes, set up a webhook with event type `PAYMENT`. See [Webhooks](webhooks.md) for setup instructions.
+
+> **Breaking change (2026-08):** the dedicated `OPEN_BANKING` event type was removed and existing `OPEN_BANKING` webhooks were **deleted** — open banking notifications now arrive on the `PAYMENT` event type. If you had an `OPEN_BANKING` webhook, create a `PAYMENT` webhook to keep receiving notifications.

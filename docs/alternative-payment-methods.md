@@ -179,13 +179,13 @@ When a payment is declined while still in `TOKEN_REQUESTED`, the `responseCode` 
 | `RESTRICTED_COUNTRY`  | The customer's detected location is not supported (checked at button-page load, before the wallet sheet is shown). |
 | `INTERNAL_ERROR`      | The platform could not recover a usable payment method from the wallet sheet.   |
 
-In all of these cases, the payment transitions directly from `TOKEN_REQUESTED` to `DECLINED`, a `CARD_PAYMENT` webhook is fired, and no card-side processing happens. The customer can retry by creating a new payment.
+In all of these cases, the payment transitions directly from `TOKEN_REQUESTED` to `DECLINED`, a `PAYMENT` webhook is fired, and no card-side processing happens. The customer can retry by creating a new payment.
 
 Declines that occur **after** the customer has authorized (validation failures, 3DS failures, issuer declines, etc.) follow exactly the same conventions as regular [card payments](card-payments.md#payment-lifecycle).
 
 ## Webhooks
 
-APM payments emit the standard `CARD_PAYMENT` webhook events — there is no separate event type, and the rules are identical to regular [card payments](card-payments.md). Webhooks fire on the key actionable transitions only:
+APM payments emit the standard `PAYMENT` webhook events — there is no separate event type, and the rules are identical to regular [card payments](card-payments.md). Webhooks fire on the key actionable transitions only:
 
 - `AUTH_REQUESTED` — when a 3DS challenge is required (carries the `actionUrl` to redirect the customer to).
 - `CAPTURED` — terminal, success.

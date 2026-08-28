@@ -19,10 +19,12 @@ Because your systems never collect, transmit, or store card data, your **PCI DSS
 | `successUrl` / `failureUrl` optional                 | `successUrl` / `failureUrl` required                             |
 | You redirect the customer only for 3DS               | You always redirect the customer to the HPP                      |
 | Settlement based on the payment amount               | Settlement based on `walletTransferAmount`                       |
-| `CARD_PAYMENT` webhook                               | `CARD_PAYMENT` webhook **plus** `WALLET_TRANSFER` webhook        |
+| `PAYMENT` webhook                                    | `PAYMENT` webhook **plus** `WALLET_TRANSFER` webhook             |
 | Payment status via `GET /payment/{id}`               | Payment record with per-method attempts via `GET /payment/record/{id}` |
 
 Card whitelisting works exactly as it does today — cards must be whitelisted before they can be used (see [Card Whitelisting](#card-whitelisting) below).
+
+> **Sibling flow:** [Fiat Payments](fiat-payments.md) uses the same initialize contract and hosted page without the crypto wallet top-up step. It is being rolled out and is enabled per merchant account.
 
 ## How It Works
 
@@ -45,7 +47,7 @@ sequenceDiagram
     alt 3DS required
         HPP->>C: Redirect to 3DS challenge and back
     end
-    API-->>M: Webhook CARD_PAYMENT: status=CAPTURED (or DECLINED)
+    API-->>M: Webhook PAYMENT: status=CAPTURED (or DECLINED)
     Note over HPP: Customer wallet created or reused<br/>(identified by customerEmail)
     C->>HPP: Confirm transfer to merchant wallet (default: full amount)
     API-->>M: Webhook WALLET_TRANSFER (top-up intent captured)
@@ -136,7 +138,7 @@ Requests with any other currency code are rejected with `400 Bad Request`.
 | 200  | Payment initialized successfully                            |
 | 400  | Invalid request (e.g. unsupported currency, malformed field) |
 | 409  | Duplicate `externalId` (see [Idempotency](idempotency.md))  |
-| 422  | Payment cannot be accepted (e.g. merchant account not active) |
+| 422  | Payment cannot be accepted (e.g. merchant account not active, or crypto payments not enabled for your account) |
 
 ### The `actionUrl`
 
@@ -153,7 +155,7 @@ Redirect the customer's browser to the `actionUrl`. On the hosted page the custo
 2. Enters the same details required for a regular card payment: card number, cardholder name, expiry, CVC, and billing address.
 3. Completes 3D Secure if the issuer requires it — the hosted page handles the redirect to the 3DS vendor and back. You do not need to do anything.
 
-The hosted page polls the payment status and shows the outcome to the customer. Meanwhile, your server is notified via the [`CARD_PAYMENT` webhook](webhooks.md): the card attempt transitions through the familiar card lifecycle and ends in `CAPTURED` or `DECLINED`.
+The hosted page polls the payment status and shows the outcome to the customer. Meanwhile, your server is notified via the [`PAYMENT` webhook](webhooks.md): the card attempt transitions through the familiar card lifecycle and ends in `CAPTURED` or `DECLINED`.
 
 ### Payment Lifecycle
 
@@ -172,7 +174,7 @@ stateDiagram-v2
 
 | Status        | Description                                                                   |
 |---------------|-------------------------------------------------------------------------------|
-| `INITIALIZED` | Payment created via `POST /payment/crypto/initialize`, waiting for the customer on the HPP. If the customer never submits the payment, it is automatically declined shortly after the 15-minute token expires — the `CARD_PAYMENT` webhook reports `status: DECLINED` with `responseCode: INITIALIZED_PAYMENT_EXPIRED` |
+| `INITIALIZED` | Payment created via `POST /payment/crypto/initialize`, waiting for the customer on the HPP. If the customer never submits the payment, it is automatically declined shortly after the 15-minute token expires — the `PAYMENT` webhook reports `status: DECLINED` with `responseCode: INITIALIZED_PAYMENT_EXPIRED` |
 | `PENDING`     | The customer submitted a payment attempt which is being processed             |
 | `COMPLETED`   | A payment attempt succeeded (terminal, success)                               |
 | `DECLINED`    | The payment failed (terminal) — `responseCode` carries the reason, including [3DS failures](card-payments.md#id-3ds-failure-outcomes) |
@@ -255,7 +257,7 @@ You should configure **two** webhooks (one per event type — see [Webhooks](web
 
 | Event Type        | Triggered When                                                                                  |
 |-------------------|--------------------------------------------------------------------------------------------------|
-| `CARD_PAYMENT`    | The card payment status changes (`AUTH_REQUESTED`, `CAPTURED`, `DECLINED`, …) — unchanged from the previous integration |
+| `PAYMENT`    | The card payment status changes (`AUTH_REQUESTED`, `CAPTURED`, `DECLINED`, …) — unchanged from the previous integration |
 | `WALLET_TRANSFER` | The customer's top-up to your merchant wallet has been captured (`status: COMPLETED`, sent at intent capture; the on-chain transfer may settle shortly after), **or** the top-up window expired without the customer confirming a transfer (`status: EXPIRED`) |
 
 Create the new webhook:
@@ -302,7 +304,7 @@ The `status` field is `COMPLETED` when the top-up intent was captured, or `EXPIR
 
 Card whitelisting is **mandatory**: each card must be registered via the [whitelist API](blocklist-and-whitelist.md#card-whitelist) and clear the ~72-hour cooldown period **before** it can be used to pay. (Platform administration can exempt individual merchant accounts from this requirement — see [Blocklist and Whitelist](blocklist-and-whitelist.md#card-whitelist).)
 
-Because the customer enters their card on the hosted payments page rather than through your systems, you must whitelist the card ahead of time (server-to-server, using your S2S token) so that the card the customer submits on the HPP is already approved. A payment attempted on the HPP with a non-whitelisted or cooldown-active card is **declined** — the `CARD_PAYMENT` webhook reports `status=DECLINED` and the customer is redirected to your `failureUrl`.
+Because the customer enters their card on the hosted payments page rather than through your systems, you must whitelist the card ahead of time (server-to-server, using your S2S token) so that the card the customer submits on the HPP is already approved. A payment attempted on the HPP with a non-whitelisted or cooldown-active card is **declined** — the `PAYMENT` webhook reports `status=DECLINED` and the customer is redirected to your `failureUrl`.
 
 The [Blocklist](blocklist-and-whitelist.md) (blocking customers) is unaffected.
 
@@ -314,9 +316,9 @@ All errors follow the standard [error format](error-handling.md). Specific to th
 |--------------------------------------------|----------------------------------------------------------------------------------------|
 | `actionUrl` token expired (after 15 min)   | The hosted page redirects the customer to a session-expired page. Initialize a new payment with a new `externalId`. |
 | Duplicate `externalId`                     | `409 Conflict` on `POST /payment/crypto/initialize` — see [Idempotency](idempotency.md) |
-| Payment declined                           | `CARD_PAYMENT` webhook with `status=DECLINED` and a `responseCode`; the customer is redirected to your `failureUrl` |
-| Customer abandons the hosted page          | Shortly after the token expires, the payment is declined automatically — `CARD_PAYMENT` webhook with `status=DECLINED` and `responseCode=INITIALIZED_PAYMENT_EXPIRED`; no funds are moved |
-| Customer opens the page from a restricted location | The customer is redirected to a blocked-location page and the payment is declined — `CARD_PAYMENT` webhook with `status=DECLINED` and a `BLOCKED_LOCATION*` `responseCode` |
+| Payment declined                           | `PAYMENT` webhook with `status=DECLINED` and a `responseCode`; the customer is redirected to your `failureUrl` |
+| Customer abandons the hosted page          | Shortly after the token expires, the payment is declined automatically — `PAYMENT` webhook with `status=DECLINED` and `responseCode=INITIALIZED_PAYMENT_EXPIRED`; no funds are moved |
+| Customer opens the page from a restricted location | The customer is redirected to a blocked-location page and the payment is declined — `PAYMENT` webhook with `status=DECLINED` and a `BLOCKED_LOCATION*` `responseCode` |
 | Customer pays but never confirms the wallet top-up | The card payment stays captured; a `WALLET_TRANSFER` webhook with `status=EXPIRED` is sent after the session expires |
 
 ## Testing
@@ -331,13 +333,13 @@ Suggested end-to-end test:
 2. Open the returned `actionUrl` in a browser.
 3. Pay with an approved test card (e.g. `4111111111111111`, `01/2035`, `Jane Smith`) — or a 3DS card to exercise the challenge flow.
 4. Confirm the wallet transfer on the page.
-5. Verify you received the `CARD_PAYMENT` (`CAPTURED`) and `WALLET_TRANSFER` webhooks, and that `GET /payment/record/{id}` shows `walletTransferAmount`.
+5. Verify you received the `PAYMENT` (`CAPTURED`) and `WALLET_TRANSFER` webhooks, and that `GET /payment/record/{id}` shows `walletTransferAmount`.
 
 ## Migration Checklist
 
 1. **Replace** `POST /payment` (or first-generation `POST /payment/crypto`) calls with `POST /payment/crypto/initialize` — drop all `card` fields, provide `customerEmail`, `customerFirstName` and `customerLastName`, and always provide `successUrl` and `failureUrl`.
 2. **Remove card collection** from your checkout entirely; redirect the customer to the `actionUrl` instead (within 15 minutes of initializing).
-3. **Keep** your `CARD_PAYMENT` webhook — its payloads are unchanged.
+3. **Keep** your payment webhook — payloads are unchanged. (If you created it before the 2026-08 event-type restructuring as `CARD_PAYMENT`, it has been renamed to `PAYMENT` automatically — see [Webhooks](webhooks.md).)
 4. **Add** a `WALLET_TRANSFER` webhook and use it to trigger reconciliation.
 5. **Switch reads** to `GET /payment/record/{id}` / `GET /payment/record` for payments created via the initialize endpoint.
 6. **Base settlement and reconciliation on `walletTransferAmount`**, not on the payment amount.
